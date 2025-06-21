@@ -4,5 +4,5 @@ COPY . /src/ramalama-minimal
 WORKDIR /src/ramalama-minimal
 USER root
 RUN ./build-script.sh ramalama
-User 1001
+USER 1001
 WORKDIR /

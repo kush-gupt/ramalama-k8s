@@ -1,4 +1,4 @@
-FROM quay.io/kugupta/qwen3-4b-q4-k-m:latest AS model_source
+FROM quay.io/kugupta/qwen3-30b:latest AS model_source
 
 # Stage 2: Use the Ramalama application image as our final base
 FROM quay.io/kugupta/centos-ramalama-min:latest
@@ -14,4 +14,4 @@ USER 1001
 
 # Optional: Add labels to describe your new all-in-one image
 LABEL maintainer="Kush Gupta"
-LABEL description="All-in-one Ramalama server with embedded Qwen-4B model."
+LABEL description="All-in-one Ramalama server with embedded Qwen3-30B-A3B-UD-Q4_K_XL.gguf Unsloth model."
