@@ -20,7 +20,7 @@ spec:
           type: "RuntimeDefault"
       containers:
       - name: ramalama-qwen
-        image: quay.io/kugupta/qwen3-4b-ramalama-x86:latest
+        image: quay.io/kugupta/qwen3-4b-ramalama:latest
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -32,7 +32,7 @@ spec:
         - '--port'
         - '8080'
         - '--model'
-        - '/models/model.file'
+        - '/models/Qwen3-4B-Q4_K_M.gguf/Qwen3-4B-Q4_K_M.gguf'
         - '--no-warmup'
         - '--jinja'
         - '--log-colors'
