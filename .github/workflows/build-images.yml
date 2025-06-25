@@ -1,0 +1,187 @@
+name: Build Container Images with Podman
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  REGISTRY: ghcr.io
+  # IMAGE_OWNER will default to github.repository_owner (lowercased).
+  # Example: if repo is MyOrg/my-repo, images will be ghcr.io/myorg/centos-ramalama-min
+  # Override IMAGE_OWNER if you want to push to a different org or user account.
+  # e.g., IMAGE_OWNER: your-quay-username
+
+  BASE_IMAGE_NAME_SUFFIX: centos-ramalama-min
+  APP_IMAGE_QWEN_4B_NAME_SUFFIX: centos-ramalama-qwen-4b
+  APP_IMAGE_QWEN_30B_NAME_SUFFIX: centos-ramalama-qwen-30b
+
+jobs:
+  determine-image-owner:
+    name: Determine Image Owner
+    runs-on: ubuntu-latest
+    outputs:
+      owner: ${{ steps.get_owner.outputs.OWNER }}
+      registry_owner_path: ${{ steps.get_owner.outputs.REGISTRY_OWNER_PATH }}
+    steps:
+      - name: Get and lowercase repository owner
+        id: get_owner
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "OWNER=$OWNER" >> $GITHUB_OUTPUT
+          echo "REGISTRY_OWNER_PATH=${{ env.REGISTRY }}/$OWNER" >> $GITHUB_OUTPUT
+
+  build-base-image:
+    name: Build Base Image (centos-ramalama-min)
+    runs-on: ubuntu-latest
+    needs: determine-image-owner
+    permissions:
+      contents: read
+      packages: write # Required to publish images to GitHub Packages
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Podman v5
+        run: |
+          # Using a common method to install latest Podman.
+          # Consider a specific version installer if strict v5 is needed and this provides newer.
+          sudo apt-get update
+          sudo apt-get install -y podman
+
+      - name: Verify Podman version (optional)
+        run: podman --version
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request' # Only login if we might push
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+
+      - name: Define Image Tags
+        id: image_tags
+        run: |
+          OWNER_PATH="${{ needs.determine-image-owner.outputs.registry_owner_path }}"
+          IMAGE_BASENAME="${{ env.BASE_IMAGE_NAME_SUFFIX }}"
+          TAG_LATEST="${OWNER_PATH}/${IMAGE_BASENAME}:latest"
+          TAG_SHA="${OWNER_PATH}/${IMAGE_BASENAME}:${{ github.sha }}"
+          echo "TAG_LATEST=${TAG_LATEST}" >> $GITHUB_OUTPUT
+          echo "TAG_SHA=${TAG_SHA}" >> $GITHUB_OUTPUT
+          echo "All tags to build: ${TAG_LATEST}, ${TAG_SHA}"
+
+      - name: Build base image
+        run: |
+          podman build \
+            --format=oci \
+            --tag ${{ steps.image_tags.outputs.TAG_LATEST }} \
+            --tag ${{ steps.image_tags.outputs.TAG_SHA }} \
+            -f ./containerfiles/Containerfile-min \
+            .
+
+      - name: Push base image
+        if: github.event_name != 'pull_request'
+        run: |
+          podman push ${{ steps.image_tags.outputs.TAG_LATEST }}
+          podman push ${{ steps.image_tags.outputs.TAG_SHA }}
+
+  build-app-image-qwen-4b:
+    name: Build App Image (Qwen 4B)
+    runs-on: ubuntu-latest
+    needs: [determine-image-owner, build-base-image]
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Podman v5
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+
+      - name: Define Image Tags and Build Args
+        id: image_details
+        run: |
+          OWNER_PATH="${{ needs.determine-image-owner.outputs.registry_owner_path }}"
+          BASE_IMAGE_LATEST="${OWNER_PATH}/${{ env.BASE_IMAGE_NAME_SUFFIX }}:latest"
+          APP_IMAGE_BASENAME="${{ env.APP_IMAGE_QWEN_4B_NAME_SUFFIX }}"
+          TAG_LATEST="${OWNER_PATH}/${APP_IMAGE_BASENAME}:latest"
+          TAG_SHA="${OWNER_PATH}/${APP_IMAGE_BASENAME}:${{ github.sha }}"
+          echo "BASE_IMAGE_ARG=${BASE_IMAGE_LATEST}" >> $GITHUB_OUTPUT
+          echo "TAG_LATEST=${TAG_LATEST}" >> $GITHUB_OUTPUT
+          echo "TAG_SHA=${TAG_SHA}" >> $GITHUB_OUTPUT
+          echo "All tags to build: ${TAG_LATEST}, ${TAG_SHA}"
+          echo "Base image for build-arg: ${BASE_IMAGE_LATEST}"
+
+      - name: Build Qwen 4B app image
+        run: |
+          podman build \
+            --format=oci \
+            --build-arg BASE_IMAGE_NAME=${{ steps.image_details.outputs.BASE_IMAGE_ARG }} \
+            --tag ${{ steps.image_details.outputs.TAG_LATEST }} \
+            --tag ${{ steps.image_details.outputs.TAG_SHA }} \
+            -f ./containerfiles/Containerfile \
+            .
+
+      - name: Push Qwen 4B app image
+        if: github.event_name != 'pull_request'
+        run: |
+          podman push ${{ steps.image_details.outputs.TAG_LATEST }}
+          podman push ${{ steps.image_details.outputs.TAG_SHA }}
+
+  build-app-image-qwen-30b:
+    name: Build App Image (Qwen 30B)
+    runs-on: ubuntu-latest
+    needs: [determine-image-owner, build-base-image]
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Podman v5
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+
+      - name: Define Image Tags and Build Args
+        id: image_details
+        run: |
+          OWNER_PATH="${{ needs.determine-image-owner.outputs.registry_owner_path }}"
+          BASE_IMAGE_LATEST="${OWNER_PATH}/${{ env.BASE_IMAGE_NAME_SUFFIX }}:latest" # This will be the image built by build-base-image job
+          APP_IMAGE_BASENAME="${{ env.APP_IMAGE_QWEN_30B_NAME_SUFFIX }}"
+          TAG_LATEST="${OWNER_PATH}/${APP_IMAGE_BASENAME}:latest"
+          TAG_SHA="${OWNER_PATH}/${APP_IMAGE_BASENAME}:${{ github.sha }}"
+          echo "BASE_IMAGE_ARG=${BASE_IMAGE_LATEST}" >> $GITHUB_OUTPUT
+          echo "TAG_LATEST=${TAG_LATEST}" >> $GITHUB_OUTPUT
+          echo "TAG_SHA=${TAG_SHA}" >> $GITHUB_OUTPUT
+          echo "All tags to build: ${TAG_LATEST}, ${TAG_SHA}"
+          echo "Base image for build-arg: ${BASE_IMAGE_LATEST}"
+
+      - name: Build Qwen 30B app image
+        run: |
+          podman build \
+            --format=oci \
+            --build-arg BASE_IMAGE_NAME=${{ steps.image_details.outputs.BASE_IMAGE_ARG }} \
+            --tag ${{ steps.image_details.outputs.TAG_LATEST }} \
+            --tag ${{ steps.image_details.outputs.TAG_SHA }} \
+            -f ./containerfiles/Containerfile-qwen-30b \
+            .
+
+      - name: Push Qwen 30B app image
+        if: github.event_name != 'pull_request'
+        run: |
+          podman push ${{ steps.image_details.outputs.TAG_LATEST }}
+          podman push ${{ steps.image_details.outputs.TAG_SHA }}

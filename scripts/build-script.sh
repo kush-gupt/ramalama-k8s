@@ -183,7 +183,7 @@ install_ramalama() {
 install_entrypoints() {
   install -d "$install_prefix"/bin
   install -m 755 \
-    ./llama-server.sh "$install_prefix"/bin
+    ./scripts/llama-server.sh "$install_prefix"/bin
     # container-images/scripts/whisper-server.sh \
     # container-images/scripts/build_rag.sh \
     # container-images/scripts/doc2rag \
