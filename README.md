@@ -113,7 +113,7 @@ podman run -it --rm -p 8080:8080 \
   your-registry-username/centos-ramalama-qwen-4b:latest \
   # Additional arguments for llama-server.sh can be added here
   # For example, to specify a model (though models are baked in these app images):
-  # --model /models/qwen2-4b-instruct-q4_k_m.gguf
+  # --model /models/Qwen3-4B-Q4_K_M.gguf/Qwen3-4B-Q4_K_M.gguf
 ```
 The server typically listens on port 8080. The `olsconfig.yaml` might be used by the server for its configuration, and models are expected to be in the `/models` directory within the container.
 
