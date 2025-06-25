@@ -16,7 +16,7 @@ The repository is organized as follows:
 │   ├── Containerfile-qwen-4b         # Builds the Qwen-4B application image
 ├── k8s/                      # Kubernetes manifests (example)
 │   ├── deployment-qwen-30b.yaml
-│   ├── deployment.yaml
+│   ├── deployment-qwen-4b.yaml
 │   ├── fake-secret.yaml
 │   └── service.yaml
 ├── scripts/                  # Build and runtime scripts
