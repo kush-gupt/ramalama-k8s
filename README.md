@@ -59,7 +59,7 @@ Application images take the base image and add a specific model.
 export APP_IMAGE_TAG="${IMAGE_OWNER}/centos-ramalama-qwen-4b:latest"
 
 podman build \
-  -f containerfiles/Containerfile \
+  -f containerfiles/Containerfile-qwen-4b \
   --build-arg BASE_IMAGE_NAME="${BASE_IMAGE_TAG}" \
   -t "${APP_IMAGE_TAG}" \
   .
