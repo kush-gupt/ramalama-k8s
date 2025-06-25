@@ -87,16 +87,7 @@ jobs:
           sudo systemctl restart docker.service
           df -h
 
-      - name: Print disk space after cleanup
-        shell: bash
-        run: |
-          df -h
-
-      - name: Verify Podman version
-        run: podman --version
-
       - name: Log in to GitHub Container Registry
-        if: github.event_name != 'pull_request' # Only login if we might push
         run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
       - name: Define Image Tags
@@ -120,7 +111,6 @@ jobs:
             .
 
       - name: Push base image
-        if: github.event_name != 'pull_request'
         run: |
           podman push ${{ steps.image_tags.outputs.TAG_LATEST }}
           podman push ${{ steps.image_tags.outputs.TAG_SHA }}
@@ -180,13 +170,7 @@ jobs:
           sudo systemctl restart docker.service
           df -h
 
-      - name: Print disk space after cleanup
-        shell: bash
-        run: |
-          df -h
-
       - name: Log in to GitHub Container Registry
-        if: github.event_name != 'pull_request'
         run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
       - name: Define Image Tags and Build Args
@@ -214,7 +198,6 @@ jobs:
             .
 
       - name: Push Qwen 4B app image
-        if: github.event_name != 'pull_request'
         run: |
           podman push ${{ steps.image_details.outputs.TAG_LATEST }}
           podman push ${{ steps.image_details.outputs.TAG_SHA }}
@@ -274,13 +257,7 @@ jobs:
           sudo systemctl restart docker.service
           df -h
 
-      - name: Print disk space after cleanup
-        shell: bash
-        run: |
-          df -h
-
       - name: Log in to GitHub Container Registry
-        if: github.event_name != 'pull_request'
         run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
       - name: Define Image Tags and Build Args
@@ -308,7 +285,6 @@ jobs:
             .
 
       - name: Push Qwen 30B app image
-        if: github.event_name != 'pull_request'
         run: |
           podman push ${{ steps.image_details.outputs.TAG_LATEST }}
           podman push ${{ steps.image_details.outputs.TAG_SHA }}
