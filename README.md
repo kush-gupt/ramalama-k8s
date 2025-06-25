@@ -1,8 +1,8 @@
 # Ramalama Container Images
 
-This repository contains the necessary files to build container images for the Ramalama project, a server environment for running language models using `llama.cpp`.
+This repository contains the necessary files to build modelcar images with Ramalama to easily serve GGUFs with a single container in Kubernetes or OpenShift using `llama.cpp`.
 
-The images are designed to be built using Podman and include a base image with dependencies and application images with specific models.
+The images are intended to be built using Podman and include a base image with dependencies and demo application images with specific models.
 
 ## Repository Structure
 
@@ -29,7 +29,7 @@ The repository is organized as follows:
 
 ## Building Images Locally with Podman
 
-It is recommended to use Podman v4 or newer.
+It is recommended to use Podman v5 or newer.
 
 ### 1. Build the Base Image (`centos-ramalama-min`)
 
@@ -52,11 +52,31 @@ Replace `your-registry-username` with your actual username or organization for t
 
 ### 2. Build an Application Image (e.g., Qwen-4B)
 
-Application images take the base image and add a specific model.
+Use Ramalama to create a raw OCI image first:
+```bash
+# Install Ramalama throught script
+$ curl -fsSL https://ramalama.ai/install.sh | bash
+...
+
+# Pull a smaller model of your choice, for Qwen-4B
+$ ramalama pull hf://unsloth/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf
+
+# Toss that into an OCI image:
+$ ramalama convert hf://unsloth/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf oci://quay.io/<username>/qwen3-4b-q4-k-m:latest
+
+# Push to a registry of your choice:
+$ podman push quay.io/<username>/qwen3-4b-q4-k-m:latest
+```
+
+Make **this image** your model source in the next Containerfiles.
+
+Application images take the centos base image and adds this OCI model into it.
+
+To build the Qwen-4B image:
 
 ```bash
 # Ensure BASE_IMAGE_TAG is set from the previous step
-export APP_IMAGE_TAG="${IMAGE_OWNER}/centos-ramalama-qwen-4b:latest"
+export APP_IMAGE_TAG="${IMAGE_OWNER}/qwen-4b-ramalama:latest"
 
 podman build \
   -f containerfiles/Containerfile-qwen-4b \
@@ -67,7 +87,7 @@ podman build \
 
 To build the Qwen-30B image:
 ```bash
-export APP_IMAGE_QWEN_30B_TAG="${IMAGE_OWNER}/centos-ramalama-qwen-30b:latest"
+export APP_IMAGE_QWEN_30B_TAG="${IMAGE_OWNER}/qwen-30b-ramalama:latest"
 
 podman build \
   -f containerfiles/Containerfile-qwen-30b \
@@ -88,12 +108,12 @@ This repository includes a GitHub Actions workflow defined in `.github/workflows
     1.  Builds the base image (`centos-ramalama-min`).
     2.  Builds the application images (`centos-ramalama-qwen-4b`, `centos-ramalama-qwen-30b`) using the just-built base image.
 *   **Registry**: Pushes images to GitHub Container Registry (GHCR) by default when changes are merged to `main`.
-    *   Images will be named like `ghcr.io/<your-github-org-or-username>/centos-ramalama-min:latest`.
+    *   Images will be named like `ghcr.io/<your-github-username>/centos-ramalama-min:latest`.
 *   **Tagging**: Images are tagged with `latest` and the Git commit SHA.
 
 **Configuring Registry for Pushing (for forks or different registries):**
 
-If you fork this repository or want to push to a different registry (e.g., your personal Quay.io account):
+If you fork this repository or want to push to a different registry (e.g., your Quay.io account):
 
 1.  **Secrets**:
     *   For GHCR (default): The workflow uses `secrets.GITHUB_TOKEN` which is automatically available and has permissions to push to your fork's GHCR if packages are enabled for the repository.
@@ -115,15 +135,15 @@ podman run -it --rm -p 8080:8080 \
   # For example, to specify a model (though models are baked in these app images):
   # --model /models/Qwen3-4B-Q4_K_M.gguf/Qwen3-4B-Q4_K_M.gguf
 ```
-The server typically listens on port 8080. The `olsconfig.yaml` might be used by the server for its configuration, and models are expected to be in the `/models` directory within the container.
+The server typically listens on port 8080. The `olsconfig.yaml` may be used by OpenShift Lightspeed for its configuration, and models are expected to be in the `/models` directory within the container.
 
 ## Kubernetes Deployment
 
-Example Kubernetes manifests are provided in the `k8s/` directory. These can be used as a starting point for deploying the Ramalama server to a Kubernetes cluster. You will likely need to customize them, especially regarding image names, resource requests/limits, and any necessary secrets or configmaps.
+Example Kubernetes manifests are provided in the `k8s/` directory. These can be used as a starting point for deploying the Ramalama server to a Kubernetes cluster. You will likely need to customize them, especially regarding image names, resource requests/limits, threads, and any necessary secrets and/or configmaps.
 
-## Multi-Architecture Images (Future Consideration)
+## Multi-Architecture Images
 
-The original README mentioned `podman manifest create` for multi-architecture images. While the current CI pipeline builds for single-architecture (amd64), the `build-script.sh` has some multi-arch awareness.
+While the current CI pipeline builds for single-architecture (amd64), the `build-script.sh` has multi-arch awareness.
 To build multi-arch images:
 1. Build images for each architecture (e.g., `amd64`, `arm64`) separately using `podman build --arch=<architecture> ...`.
 2. Create a manifest list and push it:
@@ -133,4 +153,6 @@ To build multi-arch images:
    podman manifest add my-multiarch-image:latest docker://your-registry/image:arm64-tag
    podman manifest push my-multiarch-image:latest docker://your-registry/my-multiarch-image:latest
    ```
-This functionality is not yet automated in the CI pipeline.
+ARM containers are not yet automated in the CI pipeline, they're done manually by Kush.
+
+Let Kush know if you'd like to see specific images in this repo!
