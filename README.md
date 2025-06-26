@@ -1,6 +1,6 @@
-# Ramalama Container Images
+# Ramalama Modelcar Images
 
-This repository contains the necessary files to build modelcar images with Ramalama to easily serve GGUFs with a single container in Kubernetes or OpenShift using `llama.cpp`.
+This repository contains the necessary files to build minimal modelcar images with Ramalama to easily serve GGUFs with a single container in Kubernetes or OpenShift using `llama.cpp`.
 
 The images are intended to be built using Podman and include a base image with dependencies and demo application images with specific models.
 
@@ -10,26 +10,27 @@ The repository is organized as follows:
 
 ```
 .
-├── .github/workflows/        # GitHub Actions CI workflows
+├── .github/workflows/        
 │   └── build-images.yml      # CI pipeline for building and pushing images
-├── containerfiles/           # Containerfile definitions
-│   ├── Containerfile-qwen-4b         # Builds the Qwen-4B application image
-├── k8s/                      # Kubernetes manifests (example)
-│   ├── deployment-qwen-30b.yaml
-│   ├── deployment-qwen-4b.yaml
-│   ├── fake-secret.yaml
-│   └── service.yaml
+├── containerfiles/           
+│   ├── Containerfile-qwen-4b     # Builds the Qwen-4B application image
+├── k8s/                      # Kubernetes manifests
+│   ├── deployment-qwen-4b.yaml   # Example deployment for smaller model
+│   ├── deployment-qwen-30b.yaml  # Example deployment for larger MOE model
+│   ├── fake-secret.yaml          # Fake secret for OpenShift Lightspeed
+│   ├── service.yaml              # Example service for Ramalama OpenAI compatible API
+│   └── olsconfig.yaml            # Example configuration for OpenShift Lightspeed
+│
 ├── scripts/                  # Build and runtime scripts
 │   ├── build-script.sh       # Core script to install dependencies and build llama.cpp
 │   └── llama-server.sh       # Script to start the llama.cpp server
 ├── LICENSE                   # Project license
-├── README.md                 # This file
-└── olsconfig.yaml            # Example configuration for Ramalama/llama.cpp
+└── README.md                 # This file
 ```
 
 ## Building Images Locally with Podman
 
-It is recommended to use Podman v5 or newer.
+It is recommended to use Podman 5 or newer.
 
 ### 1. Build the Base Image (`centos-ramalama-min`)
 
@@ -135,11 +136,11 @@ podman run -it --rm -p 8080:8080 \
   # For example, to specify a model (though models are baked in these app images):
   # --model /models/Qwen3-4B-Q4_K_M.gguf/Qwen3-4B-Q4_K_M.gguf
 ```
-The server typically listens on port 8080. The `olsconfig.yaml` may be used by OpenShift Lightspeed for its configuration, and models are expected to be in the `/models` directory within the container.
+The server typically listens on port 8080.
 
 ## Kubernetes Deployment
 
-Example Kubernetes manifests are provided in the `k8s/` directory. These can be used as a starting point for deploying the Ramalama server to a Kubernetes cluster. You will likely need to customize them, especially regarding image names, resource requests/limits, threads, and any necessary secrets and/or configmaps.
+Example Kubernetes manifests are provided in the `k8s/` directory. These can be used as a starting point for deploying the Ramalama server to a Kubernetes cluster. You will likely need to customize them, especially regarding image names, resource requests/limits, threads, and any necessary secrets and/or configmaps. The `olsconfig.yaml` may be used by OpenShift Lightspeed for its configuration, and models are expected to be in the `/models` directory within the container.
 
 ## Multi-Architecture Images
 
