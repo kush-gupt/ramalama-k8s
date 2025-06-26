@@ -19,9 +19,6 @@ models:
       requests:
         memory: "4Gi"
         cpu: "2"
-      limits:
-        memory: "8Gi"
-        cpu: "4"
 
   qwen-30b:
     name: "Qwen 30B"
@@ -40,10 +37,24 @@ models:
       requests:
         memory: "16Gi"
         cpu: "4"
-      limits:
-        memory: "32Gi"
-        cpu: "8"
 
+  deepseek-r1-qwen3-8b:
+    name: "DeepSeek R1 Qwen3 8B"
+    description: "All-in-one Ramalama server with embedded Unsloth DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf"
+    model_source: "quay.io/kugupta/deepseek-r1-qwen3-8b:latest"
+    model_file: "/models/Qwen3-30B-A3B-UD-Q4_K_XL.gguf/Qwen3-30B-A3B-UD-Q4_K_XL.gguf"
+    maintainer: "Kush Gupta"
+    parameters:
+      ctx_size: 20048
+      threads: 14
+      temp: 0.6
+      top_k: 20
+      top_p: 0.95
+      cache_reuse: 256
+    resources:
+      requests:
+        memory: "16Gi"
+        cpu: "4"
 # Template configurations for common model families
 templates:
   llama:
