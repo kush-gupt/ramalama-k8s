@@ -1,6 +1,6 @@
 # FROM quay.io/kugupta/qwen3-30b:latest AS model_source
 
-# ARG BASE_IMAGE_NAME
+ARG BASE_IMAGE_NAME
 # ="quay.io/kugupta/centos-ramalama-min:latest"
 FROM ${BASE_IMAGE_NAME}
 
