@@ -39,9 +39,11 @@ Add a new model to the ramalama-k8s repository.
 Options:
     -n, --name           Model name (e.g., llama-7b, mistral-7b)
     -d, --description    Model description
-    -m, --model-source   Model source image (e.g., quay.io/user/model:latest)
+    -u, --model-gguf-url Model GGUF URL (e.g., hf://...)
     -f, --model-file     Model file path inside container (e.g., /models/model.gguf/model.gguf)
+    -s, --model-source   Model source image basename (optional, defaults to MODEL_NAME-source)
     -c, --config         Use config file (optional)
+    --registry-path     Container registry path for images (default: ghcr.io/kush-gupt)
     --ctx-size          Context size (default: 20048)
     --threads           Number of threads (default: 14)
     --temp              Temperature (default: 0.6)
@@ -59,7 +61,7 @@ Examples:
     # Command line mode
     $0 --name llama-7b \\
        --description "Llama 7B model" \\
-       --model-source "quay.io/user/llama-7b:latest" \\
+       --model-gguf-url "hf://ggml-org/llama-7b/llama-7b.gguf" \\
        --model-file "/models/llama-7b.gguf/llama-7b.gguf"
     
     # Using config file
@@ -75,10 +77,12 @@ DEFAULT_TOP_K=20
 DEFAULT_TOP_P=0.95
 DEFAULT_CACHE_REUSE=256
 DEFAULT_MAINTAINER="Kush Gupta"
+DEFAULT_REGISTRY_PATH="ghcr.io/kush-gupt"
 
 # Variables
 MODEL_NAME=""
 MODEL_DESCRIPTION=""
+MODEL_GGUF_URL=""
 MODEL_SOURCE=""
 MODEL_FILE=""
 CTX_SIZE=$DEFAULT_CTX_SIZE
@@ -88,6 +92,7 @@ TOP_K=$DEFAULT_TOP_K
 TOP_P=$DEFAULT_TOP_P
 CACHE_REUSE=$DEFAULT_CACHE_REUSE
 MAINTAINER="$DEFAULT_MAINTAINER"
+REGISTRY_PATH="$DEFAULT_REGISTRY_PATH"
 CONFIG_FILE=""
 INTERACTIVE_MODE=false
 
@@ -102,16 +107,24 @@ while [[ $# -gt 0 ]]; do
             MODEL_DESCRIPTION="$2"
             shift 2
             ;;
-        -m|--model-source)
-            MODEL_SOURCE="$2"
+        -u|--model-gguf-url)
+            MODEL_GGUF_URL="$2"
             shift 2
             ;;
         -f|--model-file)
             MODEL_FILE="$2"
             shift 2
             ;;
+        -s|--model-source)
+            MODEL_SOURCE="$2"
+            shift 2
+            ;;
         -c|--config)
             CONFIG_FILE="$2"
+            shift 2
+            ;;
+        --registry-path)
+            REGISTRY_PATH="$2"
             shift 2
             ;;
         --ctx-size)
@@ -177,8 +190,9 @@ if [[ "$INTERACTIVE_MODE" == "true" ]]; then
     
     read -p "Model name (e.g., llama-7b): " MODEL_NAME
     read -p "Model description: " MODEL_DESCRIPTION
-    read -p "Model source image: " MODEL_SOURCE
+    read -p "Model GGUF URL (e.g., hf://...): " MODEL_GGUF_URL
     read -p "Model file path inside container: " MODEL_FILE
+    read -p "Model source image basename (optional, defaults to <model-name>-source): " MODEL_SOURCE
     read -p "Context size [$DEFAULT_CTX_SIZE]: " CTX_SIZE
     read -p "Number of threads [$DEFAULT_THREADS]: " THREADS
     read -p "Temperature [$DEFAULT_TEMP]: " TEMP
@@ -186,6 +200,7 @@ if [[ "$INTERACTIVE_MODE" == "true" ]]; then
     read -p "Top-p [$DEFAULT_TOP_P]: " TOP_P
     read -p "Cache reuse [$DEFAULT_CACHE_REUSE]: " CACHE_REUSE
     read -p "Maintainer [$DEFAULT_MAINTAINER]: " MAINTAINER
+    read -p "Registry Path [$DEFAULT_REGISTRY_PATH]: " REGISTRY_PATH
     
     # Use defaults if empty
     CTX_SIZE=${CTX_SIZE:-$DEFAULT_CTX_SIZE}
@@ -195,6 +210,7 @@ if [[ "$INTERACTIVE_MODE" == "true" ]]; then
     TOP_P=${TOP_P:-$DEFAULT_TOP_P}
     CACHE_REUSE=${CACHE_REUSE:-$DEFAULT_CACHE_REUSE}
     MAINTAINER=${MAINTAINER:-$DEFAULT_MAINTAINER}
+    REGISTRY_PATH=${REGISTRY_PATH:-$DEFAULT_REGISTRY_PATH}
 fi
 
 # Validate required parameters
@@ -208,8 +224,8 @@ if [[ -z "$MODEL_DESCRIPTION" ]]; then
     exit 1
 fi
 
-if [[ -z "$MODEL_SOURCE" ]]; then
-    log_error "Model source is required"
+if [[ -z "$MODEL_GGUF_URL" ]]; then
+    log_error "Model GGUF URL is required"
     exit 1
 fi
 
@@ -220,6 +236,11 @@ fi
 
 # Sanitize model name for file names
 MODEL_NAME_SAFE=$(echo "$MODEL_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
+
+# Set model source if not provided
+if [[ -z "$MODEL_SOURCE" ]]; then
+    MODEL_SOURCE="${MODEL_NAME_SAFE}-source"
+fi
 
 log_info "Adding model: $MODEL_NAME"
 log_info "Sanitized name: $MODEL_NAME_SAFE"
@@ -288,7 +309,7 @@ spec:
           type: "RuntimeDefault"
       containers:
       - name: ramalama-{{MODEL_NAME_SAFE}}
-        image: {{MODEL_SOURCE}}
+        image: {{APP_IMAGE_URL}}
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -334,12 +355,15 @@ EOF
 substitute_template() {
     local template_file="$1"
     local output_file="$2"
+    local app_image_url="${REGISTRY_PATH}/${MODEL_NAME_SAFE}-ramalama:latest"
     
     sed -e "s|{{MODEL_NAME}}|$MODEL_NAME|g" \
         -e "s|{{MODEL_NAME_SAFE}}|$MODEL_NAME_SAFE|g" \
         -e "s|{{DESCRIPTION}}|$MODEL_DESCRIPTION|g" \
+        -e "s|{{MODEL_GGUF_URL}}|${MODEL_GGUF_URL}|g" \
         -e "s|{{MODEL_SOURCE}}|$MODEL_SOURCE|g" \
         -e "s|{{MODEL_FILE}}|$MODEL_FILE|g" \
+        -e "s|{{APP_IMAGE_URL}}|${app_image_url}|g" \
         -e "s|{{CTX_SIZE}}|$CTX_SIZE|g" \
         -e "s|{{THREADS}}|$THREADS|g" \
         -e "s|{{TEMP}}|$TEMP|g" \
@@ -378,6 +402,7 @@ cat > "$CONFIG_FILE_PATH" << EOF
 # Configuration for ${MODEL_NAME}
 MODEL_NAME="$MODEL_NAME"
 MODEL_DESCRIPTION="$MODEL_DESCRIPTION"
+MODEL_GGUF_URL="$MODEL_GGUF_URL"
 MODEL_SOURCE="$MODEL_SOURCE"
 MODEL_FILE="$MODEL_FILE"
 CTX_SIZE=$CTX_SIZE
@@ -401,22 +426,22 @@ echo "  - NOTE: Workflow is automatically updated via modular system!"
 echo
 echo -e "${BLUE}Next steps:${NC}"
 echo "1. Review the generated files"
-echo "2. Commit and push to trigger the CI/CD pipeline (uses modular workflow)"
-echo "3. Build and test locally if needed:"
+echo "2. Build and push the source image:"
+echo -e "${YELLOW}ramalama convert ${MODEL_GGUF_URL} oci://${REGISTRY_PATH}/${MODEL_SOURCE}:latest${NC}"
+echo "3. Commit and push to trigger the CI/CD pipeline (uses modular workflow)"
+echo "4. Build and test locally if needed:"
 echo
 echo -e "${YELLOW}Local build example:${NC}"
-cat << EOF
 export IMAGE_OWNER="your-registry/username"
 export BASE_IMAGE_TAG="\${IMAGE_OWNER}/centos-ramalama-min:latest"
 export APP_IMAGE_TAG="\${IMAGE_OWNER}/${MODEL_NAME_SAFE}-ramalama:latest"
+export MODEL_SOURCE_IMAGE="${REGISTRY_PATH}/${MODEL_SOURCE}:latest"
 
 podman build \\
   -f containerfiles/Containerfile-${MODEL_NAME_SAFE} \\
   --build-arg BASE_IMAGE_NAME="\${BASE_IMAGE_TAG}" \\
-  --build-arg MODEL_SOURCE_NAME="${MODEL_SOURCE}" \\
+  --build-arg MODEL_SOURCE_NAME="\${MODEL_SOURCE_IMAGE}" \\
   -t "\${APP_IMAGE_TAG}" \\
   .
-EOF
-echo
 
 log_info "The modular workflow will automatically discover and build this model from models.yaml" 

@@ -71,6 +71,10 @@ class ModelGenerator:
         merged['model_key'] = model_key
         merged['model_name_safe'] = self._sanitize_name(model_key)
         
+        # Set default model_source if not provided
+        if 'model_source' not in merged:
+            merged['model_source'] = f"{merged['model_name_safe']}-source"
+        
         return merged
 
     def generate_containerfile(self, model_key: str, model_config: Dict[str, Any]) -> str:
@@ -105,6 +109,8 @@ LABEL description="{description}"
         model_name_safe = model_config['model_name_safe']
         params = model_config.get('parameters', {})
         resources = model_config.get('resources', {})
+        registry_path = self.config.get('defaults', {}).get('registry_path', 'ghcr.io/kush-gupt')
+        app_image_url = f"{registry_path}/{model_name_safe}-ramalama:latest"
         
         deployment_yaml = f"""apiVersion: apps/v1
 kind: Deployment
@@ -130,7 +136,7 @@ spec:
           type: "RuntimeDefault"
       containers:
       - name: ramalama-{model_name_safe}
-        image: {model_config.get('model_source', 'unknown')}
+        image: {app_image_url}
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -322,6 +328,7 @@ spec:
             config_content = f"""# Configuration for {merged_config["name"]}
 MODEL_NAME="{merged_config["name"]}"
 MODEL_DESCRIPTION="{merged_config.get('description', '')}"
+MODEL_GGUF_URL="{merged_config.get('model_gguf_url', '')}"
 MODEL_SOURCE="{merged_config.get('model_source', '')}"
 MODEL_FILE="{merged_config.get('model_file', '')}"
 CTX_SIZE={merged_config.get('parameters', {}).get('ctx_size', 4096)}

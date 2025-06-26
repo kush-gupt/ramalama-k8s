@@ -2,10 +2,11 @@
 # This file contains the configuration for all models in the repository
 
 models:
-  qwen-4b:
-    name: "Qwen 4B"
-    description: "All-in-one Ramalama server with embedded Qwen-4B Q4_K_M.gguf Unsloth model."
-    model_source: "quay.io/kugupta/qwen3-4b:latest"
+  qwen3-4b:
+    name: "Qwen 3 4B"
+    description: "All-in-one Ramalama server with embedded Qwen3-4B Q4_K_M.gguf Unsloth model."
+    model_source: "qwen-4b-source"
+    model_gguf_url: "hf://unsloth/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf"
     model_file: "/models/Qwen3-4B-Q4_K_M.gguf/Qwen3-4B-Q4_K_M.gguf"
     maintainer: "Kush Gupta"
     parameters:
@@ -20,10 +21,11 @@ models:
         memory: "4Gi"
         cpu: "2"
 
-  qwen-30b:
-    name: "Qwen 30B"
+  qwen3-30b:
+    name: "Qwen 3 30B"
     description: "All-in-one Ramalama server with embedded Qwen3-30B-A3B-UD-Q4_K_XL.gguf Unsloth model."
-    model_source: "quay.io/kugupta/qwen3-30b:latest"
+    model_source: "qwen-30b-source"
+    model_gguf_url: "hf://unsloth/Qwen3-30B-GGUF/Qwen3-30B-A3B-UD-Q4_K_XL.gguf"
     model_file: "/models/Qwen3-30B-A3B-UD-Q4_K_XL.gguf/Qwen3-30B-A3B-UD-Q4_K_XL.gguf"
     maintainer: "Kush Gupta"
     parameters:
@@ -41,8 +43,9 @@ models:
   deepseek-r1-qwen3-8b:
     name: "DeepSeek R1 Qwen3 8B"
     description: "All-in-one Ramalama server with embedded Unsloth DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf"
-    model_source: "quay.io/kugupta/deepseek-r1-qwen3-8b:latest"
-    model_file: "/models/Qwen3-30B-A3B-UD-Q4_K_XL.gguf/Qwen3-30B-A3B-UD-Q4_K_XL.gguf"
+    model_source: "deepseek-r1-qwen3-8b-source"
+    model_gguf_url: "hf://unsloth/DeepSeek-R1-0528-Qwen3-8B-GGUF/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf"
+    model_file: "/models/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf"
     maintainer: "Kush Gupta"
     parameters:
       ctx_size: 20048

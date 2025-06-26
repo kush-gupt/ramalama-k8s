@@ -48,7 +48,11 @@ echo -e "${GREEN}Model Configurations:${NC}"
 if [[ -d "$REPO_ROOT/models" ]] && ls "$REPO_ROOT/models"/*.conf >/dev/null 2>&1; then
     for file in "$REPO_ROOT/models"/*.conf; do
         model_name=$(basename "$file" | sed 's/.conf//')
+        gguf_url=$(grep "MODEL_GGUF_URL" "$file" | cut -d'=' -f2 | tr -d '"')
         echo "  - $model_name"
+        if [[ -n "$gguf_url" ]]; then
+            echo "    GGUF URL: $gguf_url"
+        fi
     done
 else
     echo "  No model configuration files found"
