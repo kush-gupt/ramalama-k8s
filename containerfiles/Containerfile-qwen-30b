@@ -1,4 +1,4 @@
-FROM quay.io/kugupta/qwen3-30b:latest AS model_source
+FROM --platform=linux/arm64 quay.io/kugupta/qwen3-30b:latest AS model_source
 
 # Stage 2: Use the Ramalama application image as our final base
 ARG BASE_IMAGE_NAME="quay.io/kugupta/centos-ramalama-min:latest"
