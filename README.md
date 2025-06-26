@@ -43,7 +43,7 @@ This image contains all the necessary dependencies and the compiled `llama.cpp` 
 cd /path/to/this/repo
 
 # Define your desired image name
-export IMAGE_OWNER="your-registry-username" # e.g., your GHCR username like "myuser" or quay.io username
+export IMAGE_OWNER="your-registry/username" # e.g., your GHCR username like "ghcr.io/myuser" or "quay.io/username"
 export BASE_IMAGE_TAG="${IMAGE_OWNER}/centos-ramalama-min:latest"
 
 podman build \
@@ -57,7 +57,7 @@ Replace `your-registry-username` with your actual username or organization for t
 
 Use Ramalama to create a raw OCI image first:
 ```bash
-# Install Ramalama throught script
+# Install Ramalama through script
 $ curl -fsSL https://ramalama.ai/install.sh | bash
 ...
 
@@ -65,15 +65,18 @@ $ curl -fsSL https://ramalama.ai/install.sh | bash
 $ ramalama pull hf://unsloth/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf
 
 # Toss that into an OCI image:
-$ ramalama convert hf://unsloth/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf oci://quay.io/<username>/qwen3-4b-q4-k-m:latest
+$ ramalama convert hf://unsloth/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf oci://${IMAGE_OWNER}/qwen3-4b:latest
 
 # Push to a registry of your choice:
-$ podman push quay.io/<username>/qwen3-4b-q4-k-m:latest
+$ podman push ${IMAGE_OWNER}/qwen3-4b:latest
 ```
 
 Make **this image** your model source in the next Containerfiles.
+```bash
+$ export MODEL_SOURCE_NAME='${IMAGE_OWNER}/qwen3-4b:latest'
+```
 
-Application images take the centos base image and adds this OCI model into it.
+Application images take the centos base image and add this OCI model into it.
 
 To build the Qwen-4B image:
 
@@ -84,6 +87,7 @@ export APP_IMAGE_TAG="${IMAGE_OWNER}/qwen-4b-ramalama:latest"
 podman build \
   -f containerfiles/Containerfile-qwen-4b \
   --build-arg BASE_IMAGE_NAME="${BASE_IMAGE_TAG}" \
+  --build-arg MODEL_SOURCE_NAME="${MODEL_SOURCE_NAME}" \
   -t "${APP_IMAGE_TAG}" \
   .
 ```
@@ -95,6 +99,7 @@ export APP_IMAGE_QWEN_30B_TAG="${IMAGE_OWNER}/qwen-30b-ramalama:latest"
 podman build \
   -f containerfiles/Containerfile-qwen-30b \
   --build-arg BASE_IMAGE_NAME="${BASE_IMAGE_TAG}" \
+  --build-arg MODEL_SOURCE_NAME="${MODEL_SOURCE_NAME}" \
   -t "${APP_IMAGE_QWEN_30B_TAG}" \
   .
 ```
@@ -128,17 +133,17 @@ If you fork this repository or want to push to a different registry (e.g., your 
 
 ## Running the Server
 
-Once an application image is built (e.g., `your-registry-username/centos-ramalama-qwen-4b:latest`), you can run the server. The `scripts/llama-server.sh` script is the default entrypoint or command.
+Once an application image is built (e.g., `your-registry-username/qwen-4b-ramalama:latest`), you can run the server. The `scripts/llama-server.sh` script is the default entrypoint or command.
 
 Example:
 ```bash
 podman run -it --rm -p 8080:8080 \
-  your-registry-username/centos-ramalama-qwen-4b:latest \
+  ${IMAGE_OWNER}/qwen-4b-ramalama:latest \
   # Additional arguments for llama-server.sh can be added here
   # For example, to specify a model (though models are baked in these app images):
   # --model /models/Qwen3-4B-Q4_K_M.gguf/Qwen3-4B-Q4_K_M.gguf
 ```
-The server typically listens on port 8080.
+The server listens on port 8080 by default.
 
 ## Kubernetes Deployment
 

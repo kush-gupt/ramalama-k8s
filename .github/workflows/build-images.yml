@@ -189,9 +189,10 @@ jobs:
 
       - name: Build Qwen 4B app image
         run: |
-          podman build \
+          sudo podman --root='/mnt/docker' build \
             --format=oci \
             --build-arg BASE_IMAGE_NAME=${{ steps.image_details.outputs.BASE_IMAGE_ARG }} \
+            --build-arg MODEL_SOURCE_NAME='quay.io/kugupta/qwen3-4b:latest' \
             --tag ${{ steps.image_details.outputs.TAG_LATEST }} \
             --tag ${{ steps.image_details.outputs.TAG_SHA }} \
             -f ./containerfiles/Containerfile-qwen-4b \
@@ -199,8 +200,8 @@ jobs:
 
       - name: Push Qwen 4B app image
         run: |
-          podman push ${{ steps.image_details.outputs.TAG_LATEST }}
-          podman push ${{ steps.image_details.outputs.TAG_SHA }}
+          sudo podman --root='/mnt/docker' push ${{ steps.image_details.outputs.TAG_LATEST }}
+          sudo podman --root='/mnt/docker' push ${{ steps.image_details.outputs.TAG_SHA }}
 
   build-app-image-qwen-30b:
     name: Build App Image (Qwen 30B)
@@ -279,6 +280,7 @@ jobs:
           sudo podman --root='/mnt/docker' build --squash-all \
             --format=oci \
             --build-arg BASE_IMAGE_NAME=${{ steps.image_details.outputs.BASE_IMAGE_ARG }} \
+            --build-arg MODEL_SOURCE_NAME='quay.io/kugupta/qwen3-30b:latest' \
             --tag ${{ steps.image_details.outputs.TAG_LATEST }} \
             --tag ${{ steps.image_details.outputs.TAG_SHA }} \
             -f ./containerfiles/Containerfile-qwen-30b \
@@ -286,5 +288,5 @@ jobs:
 
       - name: Push Qwen 30B app image
         run: |
-          podman push ${{ steps.image_details.outputs.TAG_LATEST }}
-          podman push ${{ steps.image_details.outputs.TAG_SHA }}
+          sudo podman --root='/mnt/docker' push ${{ steps.image_details.outputs.TAG_LATEST }}
+          sudo podman --root='/mnt/docker' push ${{ steps.image_details.outputs.TAG_SHA }}
