@@ -44,7 +44,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Upgrade to podman 5
+      - name: Upgrade to Podman 5
         run: |
           # Enable universe repository which contains podman
           sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu oracular universe"
@@ -54,18 +54,12 @@ jobs:
           # Install specific podman version
           sudo apt-get upgrade
 
-      - name: install
-        shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt-get install podman bash
-
-      - name: Print disk space before cleanup
+      - name: Print Disk Space
         shell: bash
         run: |
           df -h
 
-      - name: Free Disk Space Linux
+      - name: Free Disk Space
         shell: bash
         run: |
           sudo docker rmi "$(docker image ls -aq)" >/dev/null 2>&1 || true
@@ -78,7 +72,7 @@ jobs:
           sudo rm -f /mnt/Swapfile
 
       # /mnt has ~ 65 GB free disk space. / is too small.
-      - name: Reconfigure Docker data-root
+      - name: Reconfigure data-root
         run: |
           sudo mkdir -p /mnt/docker /etc/docker
           echo '{"data-root": "/mnt/docker"}' > /tmp/daemon.json
@@ -127,7 +121,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Upgrade to podman 5
+      - name: Upgrade to Podman 5
         run: |
           # Enable universe repository which contains podman
           sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu oracular universe"
@@ -137,18 +131,12 @@ jobs:
           # Install specific podman version
           sudo apt-get upgrade
 
-      - name: install
-        shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt-get install podman bash
-
-      - name: Print disk space before cleanup
+      - name: Print Disk Space
         shell: bash
         run: |
           df -h
 
-      - name: Free Disk Space Linux
+      - name: Free Disk Space
         shell: bash
         run: |
           sudo docker rmi "$(docker image ls -aq)" >/dev/null 2>&1 || true
@@ -161,7 +149,7 @@ jobs:
           sudo rm -f /mnt/Swapfile
 
       # /mnt has ~ 65 GB free disk space. / is too small.
-      - name: Reconfigure Docker data-root
+      - name: Reconfigure data-root
         run: |
           sudo mkdir -p /mnt/docker /etc/docker
           echo '{"data-root": "/mnt/docker"}' > /tmp/daemon.json
@@ -192,7 +180,7 @@ jobs:
           sudo podman --root='/mnt/docker' build \
             --format=oci \
             --build-arg BASE_IMAGE_NAME=${{ steps.image_details.outputs.BASE_IMAGE_ARG }} \
-            --build-arg MODEL_SOURCE_NAME='quay.io/kugupta/qwen3-4b:latest' \
+            --build-arg MODEL_SOURCE_NAME=quay.io/kugupta/qwen3-4b:latest \
             --tag ${{ steps.image_details.outputs.TAG_LATEST }} \
             --tag ${{ steps.image_details.outputs.TAG_SHA }} \
             -f ./containerfiles/Containerfile-qwen-4b \
@@ -215,7 +203,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Upgrade to podman 5
+      - name: Upgrade to Podman 5
         run: |
           # Enable universe repository which contains podman
           sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu oracular universe"
@@ -225,18 +213,12 @@ jobs:
           # Install specific podman version
           sudo apt-get upgrade
 
-      - name: install
-        shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt-get install podman bash
-
-      - name: Print disk space before cleanup
+      - name: Print Disk Space
         shell: bash
         run: |
           df -h
 
-      - name: Free Disk Space Linux
+      - name: Free Disk Space
         shell: bash
         run: |
           sudo docker rmi "$(docker image ls -aq)" >/dev/null 2>&1 || true
@@ -249,7 +231,7 @@ jobs:
           sudo rm -f /mnt/Swapfile
 
       # /mnt has ~ 65 GB free disk space. / is too small.
-      - name: Reconfigure Docker data-root
+      - name: Reconfigure data-root
         run: |
           sudo mkdir -p /mnt/docker /etc/docker
           echo '{"data-root": "/mnt/docker"}' > /tmp/daemon.json
@@ -280,7 +262,7 @@ jobs:
           sudo podman --root='/mnt/docker' build --squash-all \
             --format=oci \
             --build-arg BASE_IMAGE_NAME=${{ steps.image_details.outputs.BASE_IMAGE_ARG }} \
-            --build-arg MODEL_SOURCE_NAME='quay.io/kugupta/qwen3-30b:latest' \
+            --build-arg MODEL_SOURCE_NAME=quay.io/kugupta/qwen3-30b:latest \
             --tag ${{ steps.image_details.outputs.TAG_LATEST }} \
             --tag ${{ steps.image_details.outputs.TAG_SHA }} \
             -f ./containerfiles/Containerfile-qwen-30b \
