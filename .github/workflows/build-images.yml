@@ -257,7 +257,7 @@ jobs:
         run: |
           OWNER_PATH="${{ needs.determine-image-owner.outputs.registry_owner_path }}"
           MODEL_SOURCE_URL="${OWNER_PATH}/${{ matrix.model_source }}:latest"
-          /root/.local/bin/ramalama convert ${{ matrix.model_gguf_url }} oci://${MODEL_SOURCE_URL}
+          ramalama convert ${{ matrix.model_gguf_url }} oci://${MODEL_SOURCE_URL}
           sudo podman --storage-driver overlay --root='/mnt/docker' push ${MODEL_SOURCE_URL}
 
   build-model-images:
