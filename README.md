@@ -51,7 +51,8 @@ podman build \
   -t "${BASE_IMAGE_TAG}" \
   .
 ```
-Replace `your-registry/username` with your actual username or organization for the registry you intend to use (e.g., `ghcr.io/myuser`, `quay.io/myorg`).
+> [!NOTE]  
+> Replace `your-registry/username` with your actual username or organization for the registry you intend to use (e.g., `ghcr.io/myuser`, `quay.io/myorg`).
 
 ### 2. Build an Application Image (e.g., Qwen-4B)
 
