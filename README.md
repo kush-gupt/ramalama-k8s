@@ -32,7 +32,7 @@ The repository is organized as follows:
 
 ## Building Images Locally with Podman
 
-It is recommended to use Podman 5 or newer.
+Tested on & recommended to use Podman 5 or newer.
 
 ### 1. Build the Base Image (`centos-ramalama-min`)
 
@@ -101,6 +101,26 @@ podman build \
   -t "${APP_IMAGE_QWEN_30B_TAG}" \
   .
 ```
+## Running the Server
+
+Once an application image is built (e.g., `your-registry-username/qwen-4b-ramalama:latest`), you can run the server.
+
+Example:
+```bash
+podman run -it --rm -p 8080:8080 \
+  ${APP_IMAGE_TAG} \
+  llama-server.sh \
+  --port 8080 \
+  --model /models/Qwen3-4B-Q4_K_M.gguf/Qwen3-4B-Q4_K_M.gguf \
+  --no-warmup --jinja --log-colors \
+  --alias qwen-model \
+  --ctx-size 20048 --cache-reuse 256 -ngl -1 --threads 14 \
+  --temp 0.6 --top-k 20 --top-p 0.95 --min-p 0 \
+  --host 0.0.0.0
+```
+## Kubernetes Deployment
+
+Example Kubernetes manifests are provided in the `k8s/` directory. These can be used as a starting point for deploying the Ramalama server to a Kubernetes cluster. You will likely need to customize them, especially regarding image names, resource requests/limits, threads, and any necessary secrets and/or configmaps. The `olsconfig.yaml` may be used by OpenShift Lightspeed for its configuration, and models are expected to be in the `/models` directory within the container.
 
 ## GitHub Actions CI Pipeline
 
@@ -128,24 +148,6 @@ If you fork this repository or want to push to a different registry (e.g., your 
         *   Update the `podman login` step in `.github/workflows/build-images.yml` to use these secrets and the correct registry URL.
 2.  **Environment Variables in Workflow**:
     *   You can change the `REGISTRY` and `IMAGE_OWNER` environment variables at the top of the `.github/workflows/build-images.yml` file if you want to push to a different registry or under a different owner name by default. The `IMAGE_OWNER` defaults to `github.repository_owner`.
-
-## Running the Server
-
-Once an application image is built (e.g., `your-registry-username/qwen-4b-ramalama:latest`), you can run the server. The `scripts/llama-server.sh` script is the default entrypoint or command.
-
-Example:
-```bash
-podman run -it --rm -p 8080:8080 \
-  ${IMAGE_OWNER}/qwen-4b-ramalama:latest \
-  # Additional arguments for llama-server.sh can be added here
-  # For example, to specify a model (though models are baked in these app images):
-  # --model /models/Qwen3-4B-Q4_K_M.gguf/Qwen3-4B-Q4_K_M.gguf
-```
-The server listens on port 8080 by default.
-
-## Kubernetes Deployment
-
-Example Kubernetes manifests are provided in the `k8s/` directory. These can be used as a starting point for deploying the Ramalama server to a Kubernetes cluster. You will likely need to customize them, especially regarding image names, resource requests/limits, threads, and any necessary secrets and/or configmaps. The `olsconfig.yaml` may be used by OpenShift Lightspeed for its configuration, and models are expected to be in the `/models` directory within the container.
 
 ## Multi-Architecture Images
 
