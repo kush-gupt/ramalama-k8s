@@ -254,7 +254,7 @@ jobs:
         run: curl -fsSL https://ramalama.ai/install.sh | bash
 
       - name: Log in to Registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | sudo podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
       - name: Build and push source image with Ramalama
         run: |
