@@ -276,7 +276,7 @@ jobs:
 
       - name: Build Qwen 30B app image
         run: |
-          podman --root='/mnt/docker' build --squash-all \
+          sudo podman --root='/mnt/docker' build --squash-all \
             --format=oci \
             --build-arg BASE_IMAGE_NAME=${{ steps.image_details.outputs.BASE_IMAGE_ARG }} \
             --tag ${{ steps.image_details.outputs.TAG_LATEST }} \
