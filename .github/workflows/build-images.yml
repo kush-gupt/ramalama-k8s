@@ -97,7 +97,7 @@ jobs:
 
       - name: Build base image
         run: |
-          podman build \
+          podman --storage-driver overlay build --squash-all \
             --format=oci \
             --tag ${{ steps.image_tags.outputs.TAG_LATEST }} \
             --tag ${{ steps.image_tags.outputs.TAG_SHA }} \
@@ -106,8 +106,8 @@ jobs:
 
       - name: Push base image
         run: |
-          podman push ${{ steps.image_tags.outputs.TAG_LATEST }}
-          podman push ${{ steps.image_tags.outputs.TAG_SHA }}
+          podman --storage-driver overlay push ${{ steps.image_tags.outputs.TAG_LATEST }}
+          podman --storage-driver overlay push ${{ steps.image_tags.outputs.TAG_SHA }}
 
   build-app-image-qwen-4b:
     name: Build App Image (Qwen 4B)
@@ -177,7 +177,7 @@ jobs:
 
       - name: Build Qwen 4B app image
         run: |
-          sudo podman --root='/mnt/docker' build \
+          sudo podman --storage-driver overlay --root='/mnt/docker' build \
             --format=oci \
             --build-arg BASE_IMAGE_NAME=${{ steps.image_details.outputs.BASE_IMAGE_ARG }} \
             --build-arg MODEL_SOURCE_NAME=quay.io/kugupta/qwen3-4b:latest \
@@ -188,8 +188,8 @@ jobs:
 
       - name: Push Qwen 4B app image
         run: |
-          sudo podman --root='/mnt/docker' push ${{ steps.image_details.outputs.TAG_LATEST }}
-          sudo podman --root='/mnt/docker' push ${{ steps.image_details.outputs.TAG_SHA }}
+          sudo podman --storage-driver overlay --root='/mnt/docker' push ${{ steps.image_details.outputs.TAG_LATEST }}
+          sudo podman --storage-driver overlay --root='/mnt/docker' push ${{ steps.image_details.outputs.TAG_SHA }}
 
   build-app-image-qwen-30b:
     name: Build App Image (Qwen 30B)
@@ -259,7 +259,7 @@ jobs:
 
       - name: Build Qwen 30B app image
         run: |
-          sudo podman --root='/mnt/docker' build --squash-all \
+          sudo podman --storage-driver overlay --root='/mnt/docker' build --squash-all \
             --format=oci \
             --build-arg BASE_IMAGE_NAME=${{ steps.image_details.outputs.BASE_IMAGE_ARG }} \
             --build-arg MODEL_SOURCE_NAME=quay.io/kugupta/qwen3-30b:latest \
@@ -270,5 +270,5 @@ jobs:
 
       - name: Push Qwen 30B app image
         run: |
-          sudo podman --root='/mnt/docker' push ${{ steps.image_details.outputs.TAG_LATEST }}
-          sudo podman --root='/mnt/docker' push ${{ steps.image_details.outputs.TAG_SHA }}
+          sudo podman --storage-driver overlay --root='/mnt/docker' push ${{ steps.image_details.outputs.TAG_LATEST }}
+          sudo podman --storage-driver overlay --root='/mnt/docker' push ${{ steps.image_details.outputs.TAG_SHA }}

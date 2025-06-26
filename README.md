@@ -40,10 +40,10 @@ This image contains all the necessary dependencies and the compiled `llama.cpp` 
 
 ```bash
 # Navigate to the repository root
-cd /path/to/this/repo
+cd /this/repo
 
 # Define your desired image name
-export IMAGE_OWNER="your-registry/username" # e.g., your GHCR username like "ghcr.io/myuser" or "quay.io/username"
+export IMAGE_OWNER="your-registry/username" # e.g., your repo/username like "ghcr.io/myuser" or "quay.io/user"
 export BASE_IMAGE_TAG="${IMAGE_OWNER}/centos-ramalama-min:latest"
 
 podman build \
@@ -51,30 +51,30 @@ podman build \
   -t "${BASE_IMAGE_TAG}" \
   .
 ```
-Replace `your-registry-username` with your actual username or organization for the registry you intend to use (e.g., `ghcr.io/myuser`, `quay.io/myorg`).
+Replace `your-registry/username` with your actual username or organization for the registry you intend to use (e.g., `ghcr.io/myuser`, `quay.io/myorg`).
 
 ### 2. Build an Application Image (e.g., Qwen-4B)
 
 Use Ramalama to create a raw OCI image first:
 ```bash
-# Install Ramalama through script
+# Install Ramalama by script (see https://ramalama.ai for more details)
 curl -fsSL https://ramalama.ai/install.sh | bash
 ...
 
-# Pull a smaller model of your choice, for Qwen-4B
+# Pull a model of your choice, for Qwen-4B:
 ramalama pull hf://unsloth/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf
 
-# Make this image your model source in the next Containerfiles.
+# Make this image your model source in the next stages:
 export MODEL_SOURCE_NAME='${IMAGE_OWNER}/qwen3-4b:latest'
 
-# Toss that into an OCI image:
+# Toss that model into an OCI image:
 ramalama convert hf://unsloth/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf oci://${MODEL_SOURCE_NAME}
 
-# Push to a registry of your choice:
+# Push to your registry:
 podman push ${MODEL_SOURCE_NAME}
 ```
 
-Application images take the centos base image and add this OCI model into it.
+Modelcar images take the centos base image and copy the model into it from the OCI object created above.
 
 To build the Qwen-4B image:
 
@@ -97,7 +97,7 @@ export APP_IMAGE_QWEN_30B_TAG="${IMAGE_OWNER}/qwen-30b-ramalama:latest"
 podman build \
   -f containerfiles/Containerfile-qwen-30b \
   --build-arg BASE_IMAGE_NAME="${BASE_IMAGE_TAG}" \
-  --build-arg MODEL_SOURCE_NAME="${MODEL_SOURCE_NAME}" \
+  --build-arg MODEL_SOURCE_NAME="${MODEL_SOURCE_NAME}" \ # quay.io/kugupta/qwen3-30b as an example
   -t "${APP_IMAGE_QWEN_30B_TAG}" \
   .
 ```
@@ -155,10 +155,12 @@ To build multi-arch images:
 2. Create a manifest list and push it:
    ```bash
    podman manifest create my-multiarch-image:latest
-   podman manifest add my-multiarch-image:latest docker://your-registry/image:amd64-tag
-   podman manifest add my-multiarch-image:latest docker://your-registry/image:arm64-tag
-   podman manifest push my-multiarch-image:latest docker://your-registry/my-multiarch-image:latest
+   podman manifest add my-multiarch-image:latest your-registry/image:amd64-tag
+   podman manifest add my-multiarch-image:latest your-registry/image:arm64-tag
+   podman manifest push my-multiarch-image:latest your-registry/my-multiarch-image:latest
    ```
-ARM containers are not yet automated in the CI pipeline, they're done manually by Kush.
+ARM containers are not yet automated in the CI pipeline, they're done manually by Kush and hosted under https://quay.io/kugupta.
 
-Let Kush know if you'd like to see specific images in this repo!
+Let Kush know if you'd like to see specific images or models in this repo!
+
+Follow the original model licensing closely, I take no responsibility for any things you do with the content described here!
