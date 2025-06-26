@@ -1,0 +1,126 @@
+# Ramalama Models Configuration
+# This file contains the configuration for all models in the repository
+
+models:
+  qwen-4b:
+    name: "Qwen 4B"
+    description: "All-in-one Ramalama server with embedded Qwen-4B Q4_K_M.gguf Unsloth model."
+    model_source: "quay.io/kugupta/qwen3-4b:latest"
+    model_file: "/models/Qwen3-4B-Q4_K_M.gguf/Qwen3-4B-Q4_K_M.gguf"
+    maintainer: "Kush Gupta"
+    parameters:
+      ctx_size: 20048
+      threads: 14
+      temp: 0.6
+      top_k: 20
+      top_p: 0.95
+      cache_reuse: 256
+    resources:
+      requests:
+        memory: "4Gi"
+        cpu: "2"
+      limits:
+        memory: "8Gi"
+        cpu: "4"
+
+  qwen-30b:
+    name: "Qwen 30B"
+    description: "All-in-one Ramalama server with embedded Qwen3-30B-A3B-UD-Q4_K_XL.gguf Unsloth model."
+    model_source: "quay.io/kugupta/qwen3-30b:latest"
+    model_file: "/models/Qwen3-30B-A3B-UD-Q4_K_XL.gguf/Qwen3-30B-A3B-UD-Q4_K_XL.gguf"
+    maintainer: "Kush Gupta"
+    parameters:
+      ctx_size: 20048
+      threads: 14
+      temp: 0.7
+      top_k: 20
+      top_p: 0.8
+      cache_reuse: 256
+    resources:
+      requests:
+        memory: "16Gi"
+        cpu: "4"
+      limits:
+        memory: "32Gi"
+        cpu: "8"
+
+# Template configurations for common model families
+templates:
+  llama:
+    parameters:
+      ctx_size: 4096
+      threads: 14
+      temp: 0.7
+      top_k: 40
+      top_p: 0.9
+      cache_reuse: 256
+    resources:
+      small: # <7B parameters
+        requests:
+          memory: "4Gi"
+          cpu: "2"
+        limits:
+          memory: "8Gi"
+          cpu: "4"
+      medium: # 7B-13B parameters
+        requests:
+          memory: "8Gi"
+          cpu: "4"
+        limits:
+          memory: "16Gi"
+          cpu: "6"
+      large: # >13B parameters
+        requests:
+          memory: "16Gi"
+          cpu: "6"
+        limits:
+          memory: "32Gi"
+          cpu: "8"
+
+  mistral:
+    parameters:
+      ctx_size: 8192
+      threads: 14
+      temp: 0.6
+      top_k: 50
+      top_p: 0.95
+      cache_reuse: 256
+    resources:
+      small:
+        requests:
+          memory: "4Gi"
+          cpu: "2"
+        limits:
+          memory: "8Gi"
+          cpu: "4"
+      medium:
+        requests:
+          memory: "8Gi"
+          cpu: "4"
+        limits:
+          memory: "16Gi"
+          cpu: "6"
+
+# Global defaults
+defaults:
+  maintainer: "Kush Gupta"
+  parameters:
+    ctx_size: 4096
+    threads: 14
+    temp: 0.7
+    top_k: 40
+    top_p: 0.9
+    min_p: 0
+    cache_reuse: 256
+    host: "0.0.0.0"
+    port: 8080
+  resources:
+    requests:
+      memory: "4Gi"
+      cpu: "2"
+    limits:
+      memory: "8Gi"
+      cpu: "4"
+  labels:
+    version: "latest"
+    component: "llm-server" 

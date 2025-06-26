@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ramalama-{{MODEL_NAME_SAFE}}
+  labels:
+    app: ramalama-{{MODEL_NAME_SAFE}}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ramalama-{{MODEL_NAME_SAFE}}
+  template:
+    metadata:
+      labels:
+        app: ramalama-{{MODEL_NAME_SAFE}}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: "RuntimeDefault"
+      containers:
+      - name: ramalama-{{MODEL_NAME_SAFE}}
+        image: {{MODEL_SOURCE}}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - "ALL"
+        command: ["/usr/libexec/ramalama/ramalama-serve-core"]
+        args:
+        - 'llama-server'
+        - '--port'
+        - '8080'
+        - '--model'
+        - '{{MODEL_FILE}}'
+        - '--no-warmup'
+        - '--jinja'
+        - '--log-colors'
+        - '--alias'
+        - '{{MODEL_NAME_SAFE}}-model'
+        - '--ctx-size'
+        - '{{CTX_SIZE}}'
+        - '--temp'
+        - '{{TEMP}}'
+        - '--cache-reuse'
+        - '{{CACHE_REUSE}}'
+        - '-ngl'
+        - '-1'
+        - '--threads'
+        - '{{THREADS}}'
+        - '--top-k'
+        - '{{TOP_K}}'
+        - '--top-p'
+        - '{{TOP_P}}'
+        - '--min-p'
+        - '0'
+        - '--host'
+        - '0.0.0.0'
+        ports:
+        - containerPort: 8080

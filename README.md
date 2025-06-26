@@ -164,6 +164,49 @@ To build multi-arch images:
    ```
 ARM containers are not yet automated in the CI pipeline, they're done manually by Kush and hosted under https://quay.io/kugupta.
 
+## Model Management System
+
+This repository now includes a model management system that makes it easy to add, manage, and remove models. See [MODELS.md](MODELS.md) for detailed documentation.
+
+### Quick Start - Adding a New Model
+
+```bash
+# Interactive mode
+./scripts/add-model.sh --interactive
+
+# Command line mode
+./scripts/add-model.sh \
+  --name "llama-7b" \
+  --description "Llama 7B Chat model" \
+  --model-source "quay.io/user/llama-7b:latest" \
+  --model-file "/models/llama-7b.gguf/llama-7b.gguf"
+
+# List all models
+./scripts/list-models.sh
+
+# Remove a model
+./scripts/remove-model.sh llama-7b
+```
+
+### Configuration-Based Management
+
+You can also manage models through a centralized YAML configuration file at `models/models.yaml`:
+
+```bash
+# Generate all files from configuration
+./scripts/generate-from-config.py
+```
+
+This approach provides:
+- **Template system** for common model families (Llama, Mistral, for now)
+- **Resource sizing** presets (small/medium/large)
+- **Consistent configuration** across all components
+- **Automated file generation** for Containerfiles, k8s deployments, and CI/CD
+
+For detailed documentation, examples, and best practices, see [MODELS.md](MODELS.md).
+
+---
+
 Let Kush know if you'd like to see specific images or models in this repo!
 
 Follow the original model licensing closely, I take no responsibility for any things you do with the content described here!
