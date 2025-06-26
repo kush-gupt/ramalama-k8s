@@ -251,13 +251,17 @@ jobs:
         run: curl -fsSL https://ramalama.ai/install.sh | bash
 
       - name: Log in to Registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | sudo podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
       - name: Build and push source image with Ramalama
         run: |
           OWNER_PATH="${{ needs.determine-image-owner.outputs.registry_owner_path }}"
           MODEL_SOURCE_URL="${OWNER_PATH}/${{ matrix.model_source }}:latest"
-          ramalama convert ${{ matrix.model_gguf_url }} oci://${MODEL_SOURCE_URL}
+          
+          # Run ramalama with sudo to use the system-wide storage at /mnt/docker
+          sudo /home/runner/.local/bin/ramalama convert ${{ matrix.model_gguf_url }} oci://${MODEL_SOURCE_URL}
+          
+          # Push the image that was created by ramalama
           sudo podman --storage-driver overlay --root='/mnt/docker' push ${MODEL_SOURCE_URL}
 
   build-model-images:
