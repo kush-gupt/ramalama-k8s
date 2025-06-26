@@ -4,6 +4,8 @@ ARG MODEL_SOURCE_NAME
 # = "quay.io/kugupta/qwen3-30b:latest"
 FROM ${BASE_IMAGE_NAME}
 
+ARG MODEL_SOURCE_NAME
+
 # Copy the entire /models directory from the model source
 # into the final application image.
 # COPY --from=quay.io/kugupta/qwen3-30b:latest /models /models

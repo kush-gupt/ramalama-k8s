@@ -58,22 +58,20 @@ Replace `your-registry-username` with your actual username or organization for t
 Use Ramalama to create a raw OCI image first:
 ```bash
 # Install Ramalama through script
-$ curl -fsSL https://ramalama.ai/install.sh | bash
+curl -fsSL https://ramalama.ai/install.sh | bash
 ...
 
 # Pull a smaller model of your choice, for Qwen-4B
-$ ramalama pull hf://unsloth/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf
+ramalama pull hf://unsloth/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf
+
+# Make this image your model source in the next Containerfiles.
+export MODEL_SOURCE_NAME='${IMAGE_OWNER}/qwen3-4b:latest'
 
 # Toss that into an OCI image:
-$ ramalama convert hf://unsloth/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf oci://${IMAGE_OWNER}/qwen3-4b:latest
+ramalama convert hf://unsloth/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf oci://${MODEL_SOURCE_NAME}
 
 # Push to a registry of your choice:
-$ podman push ${IMAGE_OWNER}/qwen3-4b:latest
-```
-
-Make **this image** your model source in the next Containerfiles.
-```bash
-$ export MODEL_SOURCE_NAME='${IMAGE_OWNER}/qwen3-4b:latest'
+podman push ${MODEL_SOURCE_NAME}
 ```
 
 Application images take the centos base image and add this OCI model into it.
