@@ -1,12 +1,12 @@
-FROM quay.io/kugupta/qwen3-30b:latest AS model_source
+# FROM quay.io/kugupta/qwen3-30b:latest AS model_source
 
-ARG BASE_IMAGE_NAME
+# ARG BASE_IMAGE_NAME
 # ="quay.io/kugupta/centos-ramalama-min:latest"
 FROM ${BASE_IMAGE_NAME}
 
-# Copy the entire /models directory from the "model_source" stage
+# Copy the entire /models directory from the model source
 # into the final application image.
-COPY --from=model_source /models /models
+COPY --from=quay.io/kugupta/qwen3-30b:latest /models /models
 
 # This is a sanity check for OpenShift's random user ID.
 USER root
