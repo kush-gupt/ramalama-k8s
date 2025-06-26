@@ -12,8 +12,10 @@ The repository is organized as follows:
 .
 ├── .github/workflows/        
 │   └── build-images.yml      # CI pipeline for building and pushing images
-├── containerfiles/           
+├── containerfiles/
+│   ├── Containerfile-min         # Builds the base image           
 │   ├── Containerfile-qwen-4b     # Builds the Qwen-4B application image
+│   └── Containerfile-qwen-30b    # Builds the Qwen-30B MOE application image
 ├── k8s/                      # Kubernetes manifests
 │   ├── deployment-qwen-4b.yaml   # Example deployment for smaller model
 │   ├── deployment-qwen-30b.yaml  # Example deployment for larger MOE model
