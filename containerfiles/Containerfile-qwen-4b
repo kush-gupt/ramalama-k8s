@@ -1,7 +1,7 @@
 FROM quay.io/kugupta/qwen3-4b:latest AS model_source
 
-# Stage 2: Use the Ramalama application image as our final base
-# ARG BASE_IMAGE_NAME="quay.io/kugupta/centos-ramalama-min:latest"
+ARG BASE_IMAGE_NAME
+#="quay.io/kugupta/centos-ramalama-min:latest"
 FROM ${BASE_IMAGE_NAME}
 
 # Copy the entire /models directory from the "model_source" stage
