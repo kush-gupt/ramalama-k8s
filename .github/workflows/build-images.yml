@@ -259,10 +259,10 @@ jobs:
           MODEL_SOURCE_URL="${OWNER_PATH}/${{ matrix.model_source }}:latest"
           
           # Run ramalama with sudo to use the system-wide storage at /mnt/docker
-          sudo /home/runner/.local/bin/ramalama convert ${{ matrix.model_gguf_url }} oci://${MODEL_SOURCE_URL}
+          ramalama convert ${{ matrix.model_gguf_url }} oci://${MODEL_SOURCE_URL}
           
           # Push the image that was created by ramalama
-          sudo podman --storage-driver overlay --root='/mnt/docker' push ${MODEL_SOURCE_URL}
+          podman push ${MODEL_SOURCE_URL}
 
   build-model-images:
     name: Build Model Images
