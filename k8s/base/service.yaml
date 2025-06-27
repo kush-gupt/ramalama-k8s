@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ramalama-service
+  labels:
+    app.kubernetes.io/component: llm-server
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  selector:
+    app.kubernetes.io/component: llm-server
+  ports:
+    - name: http-api
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP 

@@ -1,0 +1,38 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: ramalama-{{MODEL_NAME_SAFE}}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+
+resources:
+- ../base-model
+
+namePrefix: "{{MODEL_NAME_SAFE}}-"
+
+commonLabels:
+  app.kubernetes.io/instance: "{{MODEL_NAME_SAFE}}"
+  model: "{{MODEL_NAME_SAFE}}"
+
+configMapGenerator:
+- name: model-config
+  behavior: replace
+  literals:
+  - MODEL_NAME={{MODEL_NAME}}
+  - MODEL_FILE={{MODEL_FILE}}
+  - ALIAS={{MODEL_NAME_SAFE}}-model
+- name: ramalama-config
+  behavior: merge
+  literals:
+  - CTX_SIZE={{CTX_SIZE}}
+  - THREADS={{THREADS}}
+  - TEMP={{TEMP}}
+  - TOP_K={{TOP_K}}
+  - TOP_P={{TOP_P}}
+  - CACHE_REUSE={{CACHE_REUSE}}
+
+images:
+- name: MODEL_IMAGE
+  newName: "{{APP_IMAGE_URL}}"
+  newTag: latest 

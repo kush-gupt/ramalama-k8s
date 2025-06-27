@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ramalama-dev
+  labels:
+    name: ramalama-dev
+    environment: dev
+    app.kubernetes.io/name: ramalama
+    app.kubernetes.io/part-of: ramalama-k8s
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1" 

@@ -121,7 +121,26 @@ podman run -it --rm -p 8080:8080 \
 ```
 ## Kubernetes Deployment
 
-Example Kubernetes manifests are provided in the `k8s/` directory. These can be used as a starting point for deploying the Ramalama server to a Kubernetes cluster. You will likely need to customize them, especially regarding image names, resource requests/limits, threads, and any necessary secrets and/or configmaps. The `olsconfig.yaml` may be used by OpenShift Lightspeed for its configuration, and models are expected to be in the `/models` directory within the container.
+The repository provides GitOps-compatible Kubernetes manifests using Kustomize and ArgoCD. The `k8s/` directory contains:
+
+- **Base resources** (`k8s/base/`): Common configurations for all deployments
+- **Environment overlays** (`k8s/overlays/`): Environment-specific configurations (dev, production)
+- **Model configurations** (`k8s/models/`): Individual model deployments
+- **ArgoCD examples** (`k8s/argocd/`): Application and ApplicationSet templates
+
+### Quick Deploy
+```bash
+# Deploy to development
+kubectl apply -k k8s/overlays/dev
+
+# Deploy to production  
+kubectl apply -k k8s/overlays/production
+
+# Deploy with ArgoCD
+kubectl apply -f k8s/argocd/applicationset-example.yaml
+```
+
+See [`k8s/README.md`](k8s/README.md) for detailed GitOps deployment instructions.
 
 ## GitHub Actions CI Pipeline
 
@@ -163,6 +182,50 @@ To build multi-arch images:
    podman manifest push my-multiarch-image:latest your-registry/my-multiarch-image:latest
    ```
 ARM containers are not yet automated in the CI pipeline, they're done manually by Kush and hosted under https://quay.io/kugupta.
+
+## Model Management System
+
+This repository now includes a model management system that makes it easy to add, manage, and remove models. See [MODELS.md](MODELS.md) for detailed documentation.
+
+### Quick Start - Adding a New Model
+
+```bash
+# Interactive mode
+./scripts/add-model.sh --interactive
+
+# Command line mode
+./scripts/add-model.sh \
+  --name "llama-7b" \
+  --description "Llama 7B Chat model" \
+  --model-source "quay.io/user/llama-7b:latest" \
+  --model-file "/models/llama-7b.gguf/llama-7b.gguf"
+
+# List all models
+./scripts/list-models.sh
+
+# Remove a model
+./scripts/remove-model.sh llama-7b
+```
+
+### Configuration-Based Management
+
+You can also manage models through a centralized YAML configuration file at `models/models.yaml`:
+
+```bash
+# Generate all files from configuration
+./scripts/generate-from-config.py
+```
+
+This approach provides:
+- **Template system** for common model families (Llama, Mistral, for now)
+- **Resource sizing** presets (small/medium/large)
+- **Consistent configuration** across all components
+- **GitOps-compatible** Kustomize structure generation
+- **Automated file generation** for Containerfiles, k8s kustomizations, and CI/CD
+
+For detailed documentation, examples, and best practices, see [MODELS.md](MODELS.md).
+
+---
 
 Let Kush know if you'd like to see specific images or models in this repo!
 

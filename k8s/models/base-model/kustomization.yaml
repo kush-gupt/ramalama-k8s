@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: ramalama-base-model
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+
+resources:
+  - deployment.yaml
+
+commonLabels:
+  app.kubernetes.io/component: llm-server
+
+# Model-specific configuration
+configMapGenerator:
+  - name: model-config
+    literals:
+      - MODEL_NAME=base-model
+      - MODEL_FILE=/models/model.file
+      - ALIAS=base-model
+
+# Model-specific patches
+patchesStrategicMerge:
+  - model-patch.yaml 

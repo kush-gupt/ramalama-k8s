@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ramalama-deepseek-r1-qwen3-8b
+  labels:
+    app: ramalama-deepseek-r1-qwen3-8b
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ramalama-deepseek-r1-qwen3-8b
+  template:
+    metadata:
+      labels:
+        app: ramalama-deepseek-r1-qwen3-8b
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: "RuntimeDefault"
+      containers:
+      - name: ramalama-deepseek-r1-qwen3-8b
+        image: ghcr.io/kush-gupt/deepseek-r1-qwen3-8b-ramalama:latest
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - "ALL"
+        command: ["/usr/libexec/ramalama/ramalama-serve-core"]
+        args:
+        - 'llama-server'
+        - '--port'
+        - '8080'
+        - '--model'
+        - '/models/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf'
+        - '--no-warmup'
+        - '--jinja'
+        - '--log-colors'
+        - '--alias'
+        - 'deepseek-r1-qwen3-8b-model'
+        - '--ctx-size'
+        - '20048'
+        - '--temp'
+        - '0.6'
+        - '--cache-reuse'
+        - '256'
+        - '-ngl'
+        - '-1'
+        - '--threads'
+        - '14'
+        - '--top-k'
+        - '20'
+        - '--top-p'
+        - '0.95'
+        - '--min-p'
+        - '0'
+        - '--host'
+        - '0.0.0.0'
+        ports:
+        - containerPort: 8080
