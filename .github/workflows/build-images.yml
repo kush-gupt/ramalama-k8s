@@ -161,11 +161,17 @@ jobs:
 
       - name: Reconfigure Docker storage
         run: |
-          sudo mkdir -p /mnt/docker /etc/docker
+          sudo mkdir -p /mnt/docker /etc/docker /etc/containers
           echo '{"data-root": "/mnt/docker"}' > /tmp/daemon.json
           sudo mv /tmp/daemon.json /etc/docker/daemon.json
           cat /etc/docker/daemon.json
           sudo systemctl restart docker.service
+          # Configure Podman storage
+          sudo tee /etc/containers/storage.conf << 'EOF'
+          [storage]
+          driver = "overlay"
+          graphroot = "/mnt/docker"
+          EOF
           df -h
 
       - name: Log in to Registry
@@ -243,7 +249,7 @@ jobs:
 
       - name: Reconfigure Docker storage
         run: |
-          sudo mkdir -p /mnt/docker /etc/docker
+          sudo mkdir -p /mnt/docker /etc/docker /etc/containers
           echo '{"data-root": "/mnt/docker"}' > /tmp/daemon.json
           sudo mv /tmp/daemon.json /etc/docker/daemon.json
           cat /etc/docker/daemon.json
@@ -251,6 +257,12 @@ jobs:
           sudo mkdir -p /run/user/1001/containers
           sudo chown -R runner:runner /run/user/1001/containers
           sudo chmod -R u+rwx /run/user/1001/containers
+          # Configure Podman storage
+          sudo tee /etc/containers/storage.conf << 'EOF'
+          [storage]
+          driver = "overlay"
+          graphroot = "/mnt/docker"
+          EOF
           df -h
 
       - name: Install Ramalama
@@ -319,11 +331,17 @@ jobs:
 
       - name: Reconfigure Docker storage  
         run: |
-          sudo mkdir -p /mnt/docker /etc/docker
+          sudo mkdir -p /mnt/docker /etc/docker /etc/containers
           echo '{"data-root": "/mnt/docker"}' > /tmp/daemon.json
           sudo mv /tmp/daemon.json /etc/docker/daemon.json
           cat /etc/docker/daemon.json
           sudo systemctl restart docker.service
+          # Configure Podman storage
+          sudo tee /etc/containers/storage.conf << 'EOF'
+          [storage]
+          driver = "overlay"
+          graphroot = "/mnt/docker"
+          EOF
           df -h
 
       - name: Check Source Image Availability
