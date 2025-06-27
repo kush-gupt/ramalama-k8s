@@ -25,7 +25,7 @@ models:
     name: "Qwen 3 30B"
     description: "All-in-one Ramalama server with embedded Qwen3-30B-A3B-UD-Q4_K_XL.gguf Unsloth model."
     model_source: "qwen-30b-source"
-    model_gguf_url: "hf://unsloth/Qwen3-30B-GGUF/Qwen3-30B-A3B-UD-Q4_K_XL.gguf"
+    model_gguf_url: "hf://unsloth/Qwen3-30B-A3B-GGUF/Qwen3-30B-A3B-UD-Q4_K_XL.gguf"
     model_file: "/models/Qwen3-30B-A3B-UD-Q4_K_XL.gguf/Qwen3-30B-A3B-UD-Q4_K_XL.gguf"
     maintainer: "Kush Gupta"
     parameters:
