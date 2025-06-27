@@ -281,72 +281,50 @@ EOF
     fi
 }
 
-# Function to create k8s deployment template if it doesn't exist
+# Function to create k8s kustomization template if it doesn't exist
 create_k8s_template() {
-    local template_file="$TEMPLATES_DIR/deployment.template.yaml"
+    local template_file="$TEMPLATES_DIR/kustomization.template.yaml"
     if [[ ! -f "$template_file" ]]; then
-        log_info "Creating k8s deployment template"
+        log_info "Creating k8s kustomization template"
         cat > "$template_file" << 'EOF'
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
 metadata:
   name: ramalama-{{MODEL_NAME_SAFE}}
-  labels:
-    app: ramalama-{{MODEL_NAME_SAFE}}
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: ramalama-{{MODEL_NAME_SAFE}}
-  template:
-    metadata:
-      labels:
-        app: ramalama-{{MODEL_NAME_SAFE}}
-    spec:
-      securityContext:
-        runAsNonRoot: true
-        seccompProfile:
-          type: "RuntimeDefault"
-      containers:
-      - name: ramalama-{{MODEL_NAME_SAFE}}
-        image: {{APP_IMAGE_URL}}
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - "ALL"
-        command: ["/usr/libexec/ramalama/ramalama-serve-core"]
-        args:
-        - 'llama-server'
-        - '--port'
-        - '8080'
-        - '--model'
-        - '{{MODEL_FILE}}'
-        - '--no-warmup'
-        - '--jinja'
-        - '--log-colors'
-        - '--alias'
-        - '{{MODEL_NAME_SAFE}}-model'
-        - '--ctx-size'
-        - '{{CTX_SIZE}}'
-        - '--temp'
-        - '{{TEMP}}'
-        - '--cache-reuse'
-        - '{{CACHE_REUSE}}'
-        - '-ngl'
-        - '-1'
-        - '--threads'
-        - '{{THREADS}}'
-        - '--top-k'
-        - '{{TOP_K}}'
-        - '--top-p'
-        - '{{TOP_P}}'
-        - '--min-p'
-        - '0'
-        - '--host'
-        - '0.0.0.0'
-        ports:
-        - containerPort: 8080
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+
+resources:
+- ../base-model
+
+namePrefix: "{{MODEL_NAME_SAFE}}-"
+
+commonLabels:
+  app.kubernetes.io/instance: "{{MODEL_NAME_SAFE}}"
+  model: "{{MODEL_NAME_SAFE}}"
+
+configMapGenerator:
+- name: model-config
+  behavior: replace
+  literals:
+  - MODEL_NAME={{MODEL_NAME}}
+  - MODEL_FILE={{MODEL_FILE}}
+  - ALIAS={{MODEL_NAME_SAFE}}-model
+- name: ramalama-config
+  behavior: merge
+  literals:
+  - CTX_SIZE={{CTX_SIZE}}
+  - THREADS={{THREADS}}
+  - TEMP={{TEMP}}
+  - TOP_K={{TOP_K}}
+  - TOP_P={{TOP_P}}
+  - CACHE_REUSE={{CACHE_REUSE}}
+
+images:
+- name: MODEL_IMAGE
+  newName: "{{APP_IMAGE_URL}}"
+  newTag: latest
 EOF
     fi
 }
@@ -383,10 +361,12 @@ log_info "Generating Containerfile-${MODEL_NAME_SAFE}"
 CONTAINERFILE_PATH="$REPO_ROOT/containerfiles/Containerfile-${MODEL_NAME_SAFE}"
 substitute_template "$TEMPLATES_DIR/Containerfile.template" "$CONTAINERFILE_PATH"
 
-# Generate k8s deployment
-log_info "Generating deployment-${MODEL_NAME_SAFE}.yaml"
-DEPLOYMENT_PATH="$REPO_ROOT/k8s/deployment-${MODEL_NAME_SAFE}.yaml"
-substitute_template "$TEMPLATES_DIR/deployment.template.yaml" "$DEPLOYMENT_PATH"
+# Generate k8s kustomization
+log_info "Generating kustomization for ${MODEL_NAME_SAFE}"
+MODEL_K8S_DIR="$REPO_ROOT/k8s/models/${MODEL_NAME_SAFE}"
+mkdir -p "$MODEL_K8S_DIR"
+KUSTOMIZATION_PATH="$MODEL_K8S_DIR/kustomization.yaml"
+substitute_template "$TEMPLATES_DIR/kustomization.template.yaml" "$KUSTOMIZATION_PATH"
 
 # Note: With the new modular workflow system, no manual workflow updates are needed!
 # The workflow automatically discovers models from the models.yaml configuration file.
@@ -420,9 +400,9 @@ log_success "Model $MODEL_NAME added successfully!"
 echo
 echo -e "${BLUE}Generated files:${NC}"
 echo "  - containerfiles/Containerfile-${MODEL_NAME_SAFE}"
-echo "  - k8s/deployment-${MODEL_NAME_SAFE}.yaml"
+echo "  - k8s/models/${MODEL_NAME_SAFE}/kustomization.yaml"
 echo "  - models/${MODEL_NAME_SAFE}.conf"
-echo "  - NOTE: Workflow is automatically updated via modular system!"
+echo "  - NOTE: Using GitOps-compatible Kustomize structure!"
 echo
 echo -e "${BLUE}Next steps:${NC}"
 echo "1. Review the generated files"

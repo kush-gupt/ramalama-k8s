@@ -81,13 +81,13 @@ class ModelGenerator:
         """Generate Containerfile content."""
         template = """ARG BASE_IMAGE_NAME
 ARG MODEL_SOURCE_NAME
-FROM ${BASE_IMAGE_NAME}
+FROM ${{BASE_IMAGE_NAME}}
 
 ARG MODEL_SOURCE_NAME
 
 # Copy the entire /models directory from the model source
 # into the final application image.
-COPY --from=${MODEL_SOURCE_NAME} /models /models
+COPY --from=${{MODEL_SOURCE_NAME}} /models /models
 
 # This is a sanity check for OpenShift's random user ID.
 USER root
@@ -104,93 +104,90 @@ LABEL description="{description}"
             description=model_config.get('description', f'{model_config["name"]} model')
         )
 
-    def generate_k8s_deployment(self, model_key: str, model_config: Dict[str, Any]) -> str:
-        """Generate Kubernetes deployment YAML."""
+    def generate_k8s_kustomization(self, model_key: str, model_config: Dict[str, Any]) -> tuple[str, str]:
+        """Generate Kustomization files for GitOps deployment."""
         model_name_safe = model_config['model_name_safe']
         params = model_config.get('parameters', {})
-        resources = model_config.get('resources', {})
         registry_path = self.config.get('defaults', {}).get('registry_path', 'ghcr.io/kush-gupt')
-        app_image_url = f"{registry_path}/{model_name_safe}-ramalama:latest"
+        app_image_url = f"{registry_path}/{model_name_safe}-ramalama"
         
-        deployment_yaml = f"""apiVersion: apps/v1
-kind: Deployment
+        # Generate kustomization.yaml
+        kustomization_yaml = f"""apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
 metadata:
   name: ramalama-{model_name_safe}
-  labels:
-    app: ramalama-{model_name_safe}
-    component: llm-server
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: ramalama-{model_name_safe}
-  template:
-    metadata:
-      labels:
-        app: ramalama-{model_name_safe}
-        component: llm-server
-    spec:
-      securityContext:
-        runAsNonRoot: true
-        seccompProfile:
-          type: "RuntimeDefault"
-      containers:
-      - name: ramalama-{model_name_safe}
-        image: {app_image_url}
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - "ALL"
-        command: ["/usr/libexec/ramalama/ramalama-serve-core"]
-        args:
-        - 'llama-server'
-        - '--port'
-        - '{params.get("port", 8080)}'
-        - '--model'
-        - '{model_config.get("model_file", "/models/model.gguf")}'
-        - '--no-warmup'
-        - '--jinja'
-        - '--log-colors'
-        - '--alias'
-        - '{model_name_safe}-model'
-        - '--ctx-size'
-        - '{params.get("ctx_size", 4096)}'
-        - '--temp'
-        - '{params.get("temp", 0.7)}'
-        - '--cache-reuse'
-        - '{params.get("cache_reuse", 256)}'
-        - '-ngl'
-        - '-1'
-        - '--threads'
-        - '{params.get("threads", 14)}'
-        - '--top-k'
-        - '{params.get("top_k", 40)}'
-        - '--top-p'
-        - '{params.get("top_p", 0.9)}'
-        - '--min-p'
-        - '{params.get("min_p", 0)}'
-        - '--host'
-        - '{params.get("host", "0.0.0.0")}'
-        ports:
-        - containerPort: {params.get("port", 8080)}"""
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 
-        # Add resource limits if specified
+resources:
+  - ../base-model
+
+namePrefix: {model_name_safe}-
+
+commonLabels:
+  app.kubernetes.io/instance: {model_name_safe}
+  model: {model_name_safe}
+
+# Model-specific configuration
+configMapGenerator:
+  - name: model-config
+    behavior: replace
+    literals:
+      - MODEL_NAME={model_config.get('name', model_name_safe)}
+      - MODEL_FILE={model_config.get('model_file', '/models/model.gguf')}
+      - ALIAS={model_name_safe}-model
+
+# Model-specific image
+images:
+  - name: MODEL_IMAGE
+    newName: {app_image_url}
+    newTag: latest
+
+# Model-specific parameters via configmap merge
+configMapGenerator:
+  - name: ramalama-config
+    behavior: merge
+    literals:
+      - CTX_SIZE={params.get('ctx_size', 4096)}
+      - THREADS={params.get('threads', 14)}
+      - TEMP={params.get('temp', 0.7)}
+      - TOP_K={params.get('top_k', 40)}
+      - TOP_P={params.get('top_p', 0.9)}
+      - CACHE_REUSE={params.get('cache_reuse', 256)}"""
+
+        # Generate model-specific patch if needed
+        resources = model_config.get('resources', {})
+        model_patch = ""
         if resources:
-            deployment_yaml += f"""
+            model_patch = f"""apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ramalama-deployment
+spec:
+  template:
+    spec:
+      containers:
+      - name: ramalama
         resources:"""
             if 'requests' in resources:
-                deployment_yaml += f"""
+                model_patch += f"""
           requests:
             memory: "{resources['requests'].get('memory', '4Gi')}"
             cpu: "{resources['requests'].get('cpu', '2')}\""""
             if 'limits' in resources:
-                deployment_yaml += f"""
+                model_patch += f"""
           limits:
             memory: "{resources['limits'].get('memory', '8Gi')}"
             cpu: "{resources['limits'].get('cpu', '4')}\""""
+            
+            kustomization_yaml += f"""
+
+# Model-specific resource patches  
+patchesStrategicMerge:
+  - model-patch.yaml"""
         
-        return deployment_yaml
+        return kustomization_yaml, model_patch
 
     def generate_workflow_job(self, model_key: str, model_config: Dict[str, Any]) -> tuple[str, str]:
         """Generate GitHub workflow job content."""
@@ -312,12 +309,22 @@ spec:
                 f.write(containerfile_content)
             print(f"  Generated: {containerfile_path}")
             
-            # Generate k8s deployment
-            deployment_content = self.generate_k8s_deployment(model_key, merged_config)
-            deployment_path = self.k8s_dir / f"deployment-{model_name_safe}.yaml"
-            with open(deployment_path, 'w') as f:
-                f.write(deployment_content)
-            print(f"  Generated: {deployment_path}")
+            # Generate k8s kustomization
+            kustomization_content, model_patch = self.generate_k8s_kustomization(model_key, merged_config)
+            model_dir = self.k8s_dir / "models" / model_name_safe
+            model_dir.mkdir(parents=True, exist_ok=True)
+            
+            kustomization_path = model_dir / "kustomization.yaml"
+            with open(kustomization_path, 'w') as f:
+                f.write(kustomization_content)
+            print(f"  Generated: {kustomization_path}")
+            
+            # Generate model patch if needed
+            if model_patch:
+                patch_path = model_dir / "model-patch.yaml"
+                with open(patch_path, 'w') as f:
+                    f.write(model_patch)
+                print(f"  Generated: {patch_path}")
             
             # Generate workflow job
             job_content, env_var_name = self.generate_workflow_job(model_key, merged_config)

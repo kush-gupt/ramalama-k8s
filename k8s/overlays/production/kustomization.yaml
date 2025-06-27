@@ -1,0 +1,46 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: ramalama-production
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+
+namespace: ramalama-production
+
+resources:
+  - ../../base
+  - namespace.yaml
+  - networkpolicy.yaml
+  - podmonitor.yaml
+
+commonLabels:
+  environment: production
+  version: stable
+
+commonAnnotations:
+  argocd.argoproj.io/sync-options: CreateNamespace=true
+
+# Production-specific configuration
+configMapGenerator:
+  - name: ramalama-config
+    behavior: merge
+    literals:
+      - LOG_LEVEL=info
+      - THREADS=16
+      - CTX_SIZE=8192
+      - CACHE_REUSE=512
+
+# Production resource limits and security
+patchesStrategicMerge:
+  - resources-patch.yaml
+  - security-patch.yaml
+
+# Production-specific image tags
+images:
+  - name: MODEL_IMAGE
+    newTag: stable
+
+replicas:
+  - name: ramalama-deployment
+    count: 1

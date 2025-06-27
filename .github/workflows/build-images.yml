@@ -205,12 +205,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: [determine-image-owner, discover-models]
     if: needs.discover-models.outputs.has_models == 'true'
+    continue-on-error: true
     permissions:
       contents: read
       packages: write
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.discover-models.outputs.models) }}
+    outputs:
+      success: ${{ steps.set-success.outputs.success }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -266,12 +269,17 @@ jobs:
           
           # Push the image that was created by ramalama
           podman push ${MODEL_SOURCE_URL}
+          
+      - name: Set success flag
+        id: set-success
+        if: success()
+        run: echo "success=true" >> $GITHUB_OUTPUT
 
   build-model-images:
     name: Build Model Images
     runs-on: ubuntu-latest
     needs: [determine-image-owner, discover-models, build-base-image, build-source-images]
-    if: needs.discover-models.outputs.has_models == 'true'
+    if: always() && needs.discover-models.outputs.has_models == 'true' && needs.build-base-image.result == 'success'
     permissions:
       contents: read
       packages: write
@@ -315,10 +323,29 @@ jobs:
           sudo systemctl restart docker.service
           df -h
 
-      - name: Log in to Registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+      - name: Check Source Image Availability
+        id: check-source
+        run: |
+          # Check if source image is available by attempting to pull it
+          OWNER_PATH="${{ needs.determine-image-owner.outputs.registry_owner_path }}"
+          MODEL_SOURCE_URL="${OWNER_PATH}/${{ matrix.model_source }}:latest"
+          
+          echo "Checking if source image exists: ${MODEL_SOURCE_URL}"
+          
+          # First login to registry
+          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+          
+          # Try to inspect the source image
+          if podman image exists ${MODEL_SOURCE_URL} || podman pull ${MODEL_SOURCE_URL} >/dev/null 2>&1; then
+            echo "source-available=true" >> $GITHUB_OUTPUT
+            echo "✅ Source image ${MODEL_SOURCE_URL} is available"
+          else
+            echo "source-available=false" >> $GITHUB_OUTPUT
+            echo "❌ Source image ${MODEL_SOURCE_URL} is not available - skipping model build"
+          fi
 
       - name: Define Image Tags
+        if: steps.check-source.outputs.source-available == 'true'
         id: image_tags
         run: |
           OWNER_PATH="${{ needs.determine-image-owner.outputs.registry_owner_path }}"
@@ -333,6 +360,7 @@ jobs:
           echo "Building: ${{ matrix.name }} (${{ matrix.key }})"
 
       - name: Build ${{ matrix.name }} Image
+        if: steps.check-source.outputs.source-available == 'true'
         run: |
           sudo podman --storage-driver overlay --root='/mnt/docker' build --squash-all \
             --format=oci \
@@ -344,6 +372,7 @@ jobs:
             .
 
       - name: Push ${{ matrix.name }} Image (with retry)
+        if: steps.check-source.outputs.source-available == 'true'
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 30

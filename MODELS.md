@@ -123,10 +123,10 @@ When you add a model, the following files are automatically generated:
 - **Purpose**: Defines how to build the container image
 - **Template**: Uses base image and copies model from source
 
-### 2. Kubernetes Deployment
-- **Location**: `k8s/deployment-{model-name}.yaml`
-- **Purpose**: Kubernetes deployment configuration
-- **Features**: Security context, resource limits, llama-server configuration
+### 2. Kubernetes Kustomization
+- **Location**: `k8s/models/{model-name}/kustomization.yaml`
+- **Purpose**: GitOps-compatible Kubernetes configuration
+- **Features**: Environment overlays, ConfigMap generation, security context
 
 ### 3. GitHub Workflow Integration
 - **Location**: Updates `.github/workflows/build-images.yml`
@@ -255,9 +255,6 @@ resources:
   requests:
     memory: "4Gi"
     cpu: "2"
-  limits:
-    memory: "8Gi"
-    cpu: "4"
 ```
 
 **Medium models (7B-13B parameters):**
@@ -266,9 +263,6 @@ resources:
   requests:
     memory: "8Gi"
     cpu: "4"
-  limits:
-    memory: "16Gi"
-    cpu: "6"
 ```
 
 **Large models (>13B parameters):**
@@ -277,9 +271,6 @@ resources:
   requests:
     memory: "16Gi"
     cpu: "6"
-  limits:
-    memory: "32Gi"
-    cpu: "8"
 ```
 
 ### 3. Parameter Tuning
@@ -298,7 +289,7 @@ resources:
 
 Before committing:
 1. Test local build: `podman build -f containerfiles/Containerfile-{model} .`
-2. Test deployment: `kubectl apply -f k8s/deployment-{model}.yaml`
+2. Test deployment: `kubectl apply -k k8s/models/{model}`
 3. Verify workflow syntax: Check GitHub Actions tab after push
 
 ## Troubleshooting
@@ -326,7 +317,7 @@ Before committing:
 ```bash
 # Check what files exist for a model
 ls -la containerfiles/Containerfile-{model-name}
-ls -la k8s/deployment-{model-name}.yaml
+ls -la k8s/models/{model-name}/kustomization.yaml
 ls -la models/{model-name}.conf
 
 # Verify workflow syntax
@@ -357,6 +348,8 @@ If you have existing manually created files:
    ```bash
    ./scripts/generate-from-config.py
    ```
+
+   This will create the new GitOps-compatible structure under `k8s/models/`
 
 4. **Compare and verify** the generated files match your requirements
 

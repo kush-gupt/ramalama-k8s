@@ -121,7 +121,26 @@ podman run -it --rm -p 8080:8080 \
 ```
 ## Kubernetes Deployment
 
-Example Kubernetes manifests are provided in the `k8s/` directory. These can be used as a starting point for deploying the Ramalama server to a Kubernetes cluster. You will likely need to customize them, especially regarding image names, resource requests/limits, threads, and any necessary secrets and/or configmaps. The `olsconfig.yaml` may be used by OpenShift Lightspeed for its configuration, and models are expected to be in the `/models` directory within the container.
+The repository provides GitOps-compatible Kubernetes manifests using Kustomize and ArgoCD. The `k8s/` directory contains:
+
+- **Base resources** (`k8s/base/`): Common configurations for all deployments
+- **Environment overlays** (`k8s/overlays/`): Environment-specific configurations (dev, production)
+- **Model configurations** (`k8s/models/`): Individual model deployments
+- **ArgoCD examples** (`k8s/argocd/`): Application and ApplicationSet templates
+
+### Quick Deploy
+```bash
+# Deploy to development
+kubectl apply -k k8s/overlays/dev
+
+# Deploy to production  
+kubectl apply -k k8s/overlays/production
+
+# Deploy with ArgoCD
+kubectl apply -f k8s/argocd/applicationset-example.yaml
+```
+
+See [`k8s/README.md`](k8s/README.md) for detailed GitOps deployment instructions.
 
 ## GitHub Actions CI Pipeline
 
@@ -201,7 +220,8 @@ This approach provides:
 - **Template system** for common model families (Llama, Mistral, for now)
 - **Resource sizing** presets (small/medium/large)
 - **Consistent configuration** across all components
-- **Automated file generation** for Containerfiles, k8s deployments, and CI/CD
+- **GitOps-compatible** Kustomize structure generation
+- **Automated file generation** for Containerfiles, k8s kustomizations, and CI/CD
 
 For detailed documentation, examples, and best practices, see [MODELS.md](MODELS.md).
 

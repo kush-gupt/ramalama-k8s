@@ -112,17 +112,17 @@ log_info "Sanitized name: $MODEL_NAME_SAFE"
 
 # Find files to remove
 FILES_TO_REMOVE=()
+DIRS_TO_REMOVE=()
 CONTAINERFILE_PATH="$REPO_ROOT/containerfiles/Containerfile-${MODEL_NAME_SAFE}"
-DEPLOYMENT_PATH="$REPO_ROOT/k8s/deployment-${MODEL_NAME_SAFE}.yaml"
+MODEL_K8S_DIR="$REPO_ROOT/k8s/models/${MODEL_NAME_SAFE}"
 CONFIG_PATH="$REPO_ROOT/models/${MODEL_NAME_SAFE}.conf"
-WORKFLOW_PATH="$REPO_ROOT/.github/workflows/build-images.yml"
 
 if [[ -f "$CONTAINERFILE_PATH" ]]; then
     FILES_TO_REMOVE+=("$CONTAINERFILE_PATH")
 fi
 
-if [[ -f "$DEPLOYMENT_PATH" ]]; then
-    FILES_TO_REMOVE+=("$DEPLOYMENT_PATH")
+if [[ -d "$MODEL_K8S_DIR" ]]; then
+    DIRS_TO_REMOVE+=("$MODEL_K8S_DIR")
 fi
 
 if [[ -f "$CONFIG_PATH" ]]; then
@@ -130,20 +130,24 @@ if [[ -f "$CONFIG_PATH" ]]; then
 fi
 
 # Check if any files exist
-if [[ ${#FILES_TO_REMOVE[@]} -eq 0 ]]; then
-    log_error "No files found for model: $MODEL_NAME_SAFE"
+if [[ ${#FILES_TO_REMOVE[@]} -eq 0 && ${#DIRS_TO_REMOVE[@]} -eq 0 ]]; then
+    log_error "No files or directories found for model: $MODEL_NAME_SAFE"
     exit 1
 fi
 
 echo
 if [[ "$DRY_RUN" == "true" ]]; then
-    log_info "DRY RUN - Files that would be removed:"
+    log_info "DRY RUN - Files and directories that would be removed:"
 else
-    log_info "Files to be removed:"
+    log_info "Files and directories to be removed:"
 fi
 
 for file in "${FILES_TO_REMOVE[@]}"; do
     echo "  - $(basename "$file")"
+done
+
+for dir in "${DIRS_TO_REMOVE[@]}"; do
+    echo "  - $(basename "$dir")/ (directory)"
 done
 
 # Note: With modular workflow, no workflow entries need to be manually removed
@@ -170,6 +174,14 @@ for file in "${FILES_TO_REMOVE[@]}"; do
     if [[ -f "$file" ]]; then
         log_info "Removing $(basename "$file")"
         rm "$file"
+    fi
+done
+
+# Remove directories
+for dir in "${DIRS_TO_REMOVE[@]}"; do
+    if [[ -d "$dir" ]]; then
+        log_info "Removing $(basename "$dir")/ directory"
+        rm -rf "$dir"
     fi
 done
 
