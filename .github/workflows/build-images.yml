@@ -274,6 +274,8 @@ jobs:
         id: set-success
         if: success()
         run: echo "success=true" >> $GITHUB_OUTPUT
+        
+
 
   build-model-images:
     name: Build Model Images
@@ -286,6 +288,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.discover-models.outputs.models) }}
+
 
     steps:
       - name: Checkout repository
@@ -336,7 +339,7 @@ jobs:
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
           
           # Try to inspect the source image
-          if podman image exists ${MODEL_SOURCE_URL} || podman pull ${MODEL_SOURCE_URL} >/dev/null 2>&1; then
+          if podman image exists ${MODEL_SOURCE_URL}; then
             echo "source-available=true" >> $GITHUB_OUTPUT
             echo "✅ Source image ${MODEL_SOURCE_URL} is available"
           else
@@ -381,6 +384,8 @@ jobs:
           command: |
             sudo podman --storage-driver overlay --root='/mnt/docker' push ${{ steps.image_tags.outputs.TAG_LATEST }}
             sudo podman --storage-driver overlay --root='/mnt/docker' push ${{ steps.image_tags.outputs.TAG_SHA }}
+            
+
 
   build-summary:
     name: Build Summary
@@ -388,22 +393,163 @@ jobs:
     needs: [discover-models, build-base-image, build-model-images, build-source-images]
     if: always()
     steps:
-      - name: Summary
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Generate Detailed Summary
         run: |
-          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Base Image:** ${{ needs.build-base-image.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Source Images:** ${{ needs.build-source-images.result || 'Skipped' }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Models Discovered:** ${{ needs.discover-models.outputs.has_models == 'true' && 'Yes' || 'No' }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Model Images:** ${{ needs.build-model-images.result || 'Skipped' }}" >> $GITHUB_STEP_SUMMARY
+          echo "## 🏗️ Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
+          # Overall job status
+          echo "### 📊 Overall Status" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Base Image | ${{ needs.build-base-image.result == 'success' && '✅ Success' || needs.build-base-image.result == 'failure' && '❌ Failed' || needs.build-base-image.result == 'cancelled' && '⏹️ Cancelled' || '⏭️ Skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Source Images | ${{ needs.build-source-images.result == 'success' && '✅ Success' || needs.build-source-images.result == 'failure' && '⚠️ Partial/Failed' || needs.build-source-images.result == 'cancelled' && '⏹️ Cancelled' || '⏭️ Skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Model Images | ${{ needs.build-model-images.result == 'success' && '✅ Success' || needs.build-model-images.result == 'failure' && '⚠️ Partial/Failed' || needs.build-model-images.result == 'cancelled' && '⏹️ Cancelled' || '⏭️ Skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Model discovery info
           if [[ "${{ needs.discover-models.outputs.has_models }}" == "true" ]]; then
-            echo "### Models Built:" >> $GITHUB_STEP_SUMMARY
+            echo "### 🤖 Models Discovered" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # Parse and display models
             echo '${{ needs.discover-models.outputs.models }}' | python3 -c "
+          import json, sys, os
+          
+          try:
+              models = json.load(sys.stdin)
+              model_list = models.get('include', [])
+              
+              print(f'**Total Models Found:** {len(model_list)}')
+              print('')
+              print('| Model | Key | Source | Status |')
+              print('|-------|-----|--------|--------|')
+              
+              for model in model_list:
+                  name = model.get('name', model['key'])
+                  key = model['key']
+                  source = model.get('model_source', 'Unknown')
+                  
+                  # Note: Individual model status would need to be tracked separately
+                  # For now, we show discovered status
+                  status = '🔍 Discovered'
+                  
+                  print(f'| **{name}** | \`{key}\` | \`{source}\` | {status} |')
+                  
+          except Exception as e:
+              print(f'❌ Error parsing models: {e}')
+          " >> $GITHUB_STEP_SUMMARY
+          
+          else
+            echo "### 🤖 Models" >> $GITHUB_STEP_SUMMARY
+            echo "❌ No models discovered or models.yaml not found" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Build results interpretation
+          echo "### 📝 Notes" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.build-source-images.result }}" == "failure" ]]; then
+            echo "⚠️  **Source Images**: Some source images may have failed to build. Model images for failed sources were automatically skipped." >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.build-model-images.result }}" == "failure" ]]; then
+            echo "⚠️  **Model Images**: Some model images may have failed to build or were skipped due to missing source images." >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.build-source-images.result }}" == "success" && "${{ needs.build-model-images.result }}" == "success" ]]; then
+            echo "✅ **All builds successful!** All discovered models have been built and pushed successfully." >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📋 **Workflow Strategy**: Individual model builds are skipped gracefully if their source images are not available, allowing other models to continue building." >> $GITHUB_STEP_SUMMARY
+          
+          # Get detailed job results using GitHub API
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔍 Detailed Build Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check if we can get job details
+          if command -v curl >/dev/null 2>&1; then
+            echo "Fetching detailed job results from GitHub API..." >> $GITHUB_STEP_SUMMARY
+            
+            # Get workflow run jobs
+            curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" | \
+              python3 -c "
           import json, sys
-          models = json.load(sys.stdin)
-          for model in models.get('include', []):
-              print(f\"- **{model.get('name', model['key'])}** ({model['key']})\")
-          " >> $GITHUB_STEP_SUMMARY || echo "- Unable to parse models list" >> $GITHUB_STEP_SUMMARY
+          
+          try:
+              data = json.load(sys.stdin)
+              jobs = data.get('jobs', [])
+              
+              # Find matrix jobs
+              source_jobs = [j for j in jobs if j['name'].startswith('Build Source Images')]
+              model_jobs = [j for j in jobs if j['name'].startswith('Build Model Images')]
+              
+              if source_jobs:
+                  print('#### 📦 Source Image Results')
+                  print('| Model | Status | Duration |')
+                  print('|-------|--------|----------|')
+                  for job in source_jobs:
+                      name = job['name'].replace('Build Source Images (', '').replace(')', '')
+                      status = job['status']
+                      conclusion = job.get('conclusion', 'unknown')
+                      duration = 'N/A'
+                      
+                      if job.get('started_at') and job.get('completed_at'):
+                          import datetime
+                          start = datetime.datetime.fromisoformat(job['started_at'].replace('Z', '+00:00'))
+                          end = datetime.datetime.fromisoformat(job['completed_at'].replace('Z', '+00:00'))
+                          duration = str(end - start).split('.')[0]
+                      
+                      status_emoji = {
+                          'success': '✅',
+                          'failure': '❌', 
+                          'cancelled': '⏹️',
+                          'skipped': '⏭️'
+                      }.get(conclusion, '❓')
+                      
+                      print(f'| {name} | {status_emoji} {conclusion} | {duration} |')
+                  print('')
+              
+              if model_jobs:
+                  print('#### 🤖 Model Image Results')
+                  print('| Model | Status | Duration |')
+                  print('|-------|--------|----------|')
+                  for job in model_jobs:
+                      name = job['name'].replace('Build Model Images (', '').replace(')', '')
+                      status = job['status']
+                      conclusion = job.get('conclusion', 'unknown')
+                      duration = 'N/A'
+                      
+                      if job.get('started_at') and job.get('completed_at'):
+                          import datetime
+                          start = datetime.datetime.fromisoformat(job['started_at'].replace('Z', '+00:00'))
+                          end = datetime.datetime.fromisoformat(job['completed_at'].replace('Z', '+00:00'))
+                          duration = str(end - start).split('.')[0]
+                      
+                      status_emoji = {
+                          'success': '✅',
+                          'failure': '❌', 
+                          'cancelled': '⏹️',
+                          'skipped': '⏭️'
+                      }.get(conclusion, '❓')
+                      
+                      print(f'| {name} | {status_emoji} {conclusion} | {duration} |')
+                  
+          except Exception as e:
+              print(f'❌ Error fetching job details: {e}')
+              print('')
+              print('💡 **Tip**: Check the Actions tab for detailed job results')
+              
+          " >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "💡 **Tip**: Check the Actions tab for detailed individual job results" >> $GITHUB_STEP_SUMMARY
+          
+          else
+            echo "💡 **Tip**: Check the Actions tab for detailed individual job results" >> $GITHUB_STEP_SUMMARY
           fi 
