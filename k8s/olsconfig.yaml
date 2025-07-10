@@ -16,7 +16,7 @@ spec:
         models:
           - name: default
         name: ramalama
-        type: rhoai_vllm
+        type: openai
         url: http://ramalama-qwen-service.ramalama.svc.cluster.local:8080/v1
   ols:
     logLevel: INFO
@@ -26,6 +26,7 @@ spec:
       console:
         replicas: 1
       replicas: 1
+    introspectionEnabled: true
     conversationCache:
       postgres:
         credentialsSecret: lightspeed-postgres-secret
