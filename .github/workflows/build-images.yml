@@ -451,7 +451,7 @@ jobs:
           export TEMP=/mnt/tmp
           
           # Run ramalama convert
-          ramalama convert --store /mnt/local/share/ramalama/store ${{ matrix.model_gguf_url }} oci://${MODEL_SOURCE_URL}
+          ramalama --store /mnt/local/share/ramalama/store convert ${{ matrix.model_gguf_url }} oci://${MODEL_SOURCE_URL}
           
           # Push the image that was created by ramalama
           podman push ${MODEL_SOURCE_URL}
