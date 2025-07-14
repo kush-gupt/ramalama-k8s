@@ -356,14 +356,8 @@ jobs:
           # First login to registry
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
           
-          # Try to inspect the source image
-          if sudo podman --storage-driver overlay --root='/mnt/docker' pull ${MODEL_SOURCE_URL}; then
-            echo "source-available=true" >> $GITHUB_OUTPUT
-            echo "✅ Source image ${MODEL_SOURCE_URL} is available"
-          else
-            echo "source-available=false" >> $GITHUB_OUTPUT
-            echo "❌ Source image ${MODEL_SOURCE_URL} is not available - skipping model build"
-          fi
+          # Try to pull the source image
+          sudo podman --storage-driver overlay --root='/mnt/docker' pull ${MODEL_SOURCE_URL}
 
       - name: Define Image Tags
         if: steps.check-source.outputs.source-available == 'true'
