@@ -333,6 +333,28 @@ jobs:
           echo "Current subgid entries:"
           grep "$RUNNER_USER" /etc/subgid || echo "No subgid entries found"
 
+      - name: Cache model-specific Podman storage
+        uses: actions/cache@v4
+        id: cache-model-storage
+        with:
+          path: |
+            /mnt/podman
+            /mnt/tmp
+          key: model-storage-${{ matrix.key }}-${{ runner.os }}-${{ hashFiles('models/models.yaml', 'containerfiles/Containerfile-min') }}
+          restore-keys: |
+            model-storage-${{ matrix.key }}-${{ runner.os }}-
+            model-storage-${{ matrix.key }}-
+
+      - name: Cache status
+        run: |
+          echo "Cache hit: ${{ steps.cache-model-storage.outputs.cache-hit }}"
+          echo "Cache key: model-storage-${{ matrix.key }}-${{ runner.os }}-${{ hashFiles('models/models.yaml', 'containerfiles/Containerfile-min') }}"
+          if [[ "${{ steps.cache-model-storage.outputs.cache-hit }}" == "true" ]]; then
+            echo "✅ Using cached storage for model ${{ matrix.key }}"
+          else
+            echo "📦 Building fresh storage for model ${{ matrix.key }}"
+          fi
+
       - name: Configure Podman storage
         run: |
           # Create storage directories on /mnt which has more space
@@ -370,8 +392,15 @@ jobs:
           echo "TMP=/mnt/tmp" >> $GITHUB_ENV
           echo "TEMP=/mnt/tmp" >> $GITHUB_ENV
           
-          # Show available space
-          df -h
+          # Show available space and cache info
+          df -h /mnt
+          echo "Cache hit: ${{ steps.cache-model-storage.outputs.cache-hit }}"
+          if [[ "${{ steps.cache-model-storage.outputs.cache-hit }}" == "true" ]]; then
+            echo "📦 Using cached Podman storage for model ${{ matrix.key }}"
+            ls -la /mnt/podman/ || echo "Podman storage directory empty"
+          else
+            echo "🔨 Fresh Podman storage for model ${{ matrix.key }}"
+          fi
           echo "Podman storage configuration complete"
 
       - name: Install Ramalama
@@ -469,6 +498,28 @@ jobs:
           echo "Current subgid entries:"
           grep "$RUNNER_USER" /etc/subgid || echo "No subgid entries found"
 
+      - name: Cache model-specific Podman storage
+        uses: actions/cache@v4
+        id: cache-model-storage
+        with:
+          path: |
+            /mnt/podman
+            /mnt/tmp
+          key: model-storage-${{ matrix.key }}-${{ runner.os }}-${{ hashFiles('models/models.yaml', 'containerfiles/Containerfile-min') }}
+          restore-keys: |
+            model-storage-${{ matrix.key }}-${{ runner.os }}-
+            model-storage-${{ matrix.key }}-
+
+      - name: Cache status
+        run: |
+          echo "Cache hit: ${{ steps.cache-model-storage.outputs.cache-hit }}"
+          echo "Cache key: model-storage-${{ matrix.key }}-${{ runner.os }}-${{ hashFiles('models/models.yaml', 'containerfiles/Containerfile-min') }}"
+          if [[ "${{ steps.cache-model-storage.outputs.cache-hit }}" == "true" ]]; then
+            echo "✅ Using cached storage for model ${{ matrix.key }}"
+          else
+            echo "📦 Building fresh storage for model ${{ matrix.key }}"
+          fi
+
       - name: Configure Podman storage  
         run: |
           # Create storage directories on /mnt which has more space
@@ -506,8 +557,15 @@ jobs:
           echo "TMP=/mnt/tmp" >> $GITHUB_ENV
           echo "TEMP=/mnt/tmp" >> $GITHUB_ENV
           
-          # Show available space
-          df -h
+          # Show available space and cache info
+          df -h /mnt
+          echo "Cache hit: ${{ steps.cache-model-storage.outputs.cache-hit }}"
+          if [[ "${{ steps.cache-model-storage.outputs.cache-hit }}" == "true" ]]; then
+            echo "📦 Using cached Podman storage for model ${{ matrix.key }}"
+            ls -la /mnt/podman/ || echo "Podman storage directory empty"
+          else
+            echo "🔨 Fresh Podman storage for model ${{ matrix.key }}"
+          fi
           echo "Podman storage configuration complete"
 
       - name: Check Source Image Availability
