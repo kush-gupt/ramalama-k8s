@@ -338,7 +338,8 @@ jobs:
         id: cache-model-storage
         with:
           path: |
-            /mnt/podman
+            /mnt/podman/storage
+            /mnt/podman/containers
             /mnt/tmp
           key: model-storage-${{ matrix.key }}-${{ runner.os }}-${{ hashFiles('models/models.yaml', 'containerfiles/Containerfile-min') }}
           restore-keys: |
@@ -503,7 +504,8 @@ jobs:
         id: cache-model-storage
         with:
           path: |
-            /mnt/podman
+            /mnt/podman/storage
+            /mnt/podman/containers
             /mnt/tmp
           key: model-storage-${{ matrix.key }}-${{ runner.os }}-${{ hashFiles('models/models.yaml', 'containerfiles/Containerfile-min') }}
           restore-keys: |
