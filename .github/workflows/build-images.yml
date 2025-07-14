@@ -357,7 +357,7 @@ jobs:
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
           
           # Try to inspect the source image
-          if podman --storage-driver overlay --root='/mnt/docker' pull ${MODEL_SOURCE_URL}; then
+          if sudo podman --storage-driver overlay --root='/mnt/docker' pull ${MODEL_SOURCE_URL}; then
             echo "source-available=true" >> $GITHUB_OUTPUT
             echo "✅ Source image ${MODEL_SOURCE_URL} is available"
           else
