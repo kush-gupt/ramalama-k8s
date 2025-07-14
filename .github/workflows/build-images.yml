@@ -166,7 +166,7 @@ jobs:
 
       - name: Configure user namespaces for rootless podman
         run: |
-          # Ensure subuid/subgid entries exist for the current user (GitLab compatibility)
+          # Ensure subuid/subgid entries exist for the current user (GitHub Actions compatibility)
           RUNNER_UID=$(id -u)
           RUNNER_USER=$(id -un)
           
@@ -190,7 +190,7 @@ jobs:
           # Create storage directories on /mnt which has more space
           sudo mkdir -p /mnt/podman /mnt/tmp /mnt/containers
           
-          # Determine the actual user ID (GitLab runners often use 1000)
+          # Determine the actual user ID (GitHub Actions runners often use 1001)
           RUNNER_UID=$(id -u)
           RUNNER_GID=$(id -g)
           echo "Configuring for user ID: $RUNNER_UID, group ID: $RUNNER_GID"
@@ -199,13 +199,14 @@ jobs:
           sudo chown -R $RUNNER_UID:$RUNNER_GID /mnt/podman /mnt/tmp /mnt/containers
           sudo chmod -R u+rwx,g+rx /mnt/podman /mnt/tmp /mnt/containers
           
-          # Ensure HOME directory is writable (important for GitLab runners)
+          # Ensure HOME directory is writable (important for GitHub Actions)
           sudo chown -R $RUNNER_UID:$RUNNER_GID $HOME || true
           
           # Create user containers directory for rootless podman
           mkdir -p ~/.config/containers
           
           # Configure Podman storage for rootless operation
+          # Use all available free space without size limits
           tee ~/.config/containers/storage.conf << 'EOF'
           [storage]
           driver = "overlay"
@@ -213,7 +214,6 @@ jobs:
           runroot = "/mnt/containers"
           
           [storage.options]
-          size = "50G"
           mount_program = "/usr/bin/fuse-overlayfs"
           EOF
           
@@ -314,7 +314,7 @@ jobs:
 
       - name: Configure user namespaces for rootless podman
         run: |
-          # Ensure subuid/subgid entries exist for the current user (GitLab compatibility)
+          # Ensure subuid/subgid entries exist for the current user (GitHub Actions compatibility)
           RUNNER_UID=$(id -u)
           RUNNER_USER=$(id -un)
           
@@ -338,7 +338,7 @@ jobs:
           # Create storage directories on /mnt which has more space
           sudo mkdir -p /mnt/podman /mnt/tmp /mnt/containers
           
-          # Determine the actual user ID (GitLab runners often use 1000)
+          # Determine the actual user ID (GitHub Actions runners often use 1001)
           RUNNER_UID=$(id -u)
           RUNNER_GID=$(id -g)
           echo "Configuring for user ID: $RUNNER_UID, group ID: $RUNNER_GID"
@@ -347,13 +347,14 @@ jobs:
           sudo chown -R $RUNNER_UID:$RUNNER_GID /mnt/podman /mnt/tmp /mnt/containers
           sudo chmod -R u+rwx,g+rx /mnt/podman /mnt/tmp /mnt/containers
           
-          # Ensure HOME directory is writable (important for GitLab runners)
+          # Ensure HOME directory is writable (important for GitHub Actions)
           sudo chown -R $RUNNER_UID:$RUNNER_GID $HOME || true
           
           # Create user containers directory for rootless podman
           mkdir -p ~/.config/containers
           
           # Configure Podman storage for rootless operation
+          # Use all available free space without size limits
           tee ~/.config/containers/storage.conf << 'EOF'
           [storage]
           driver = "overlay"
@@ -361,7 +362,6 @@ jobs:
           runroot = "/mnt/containers"
           
           [storage.options]
-          size = "50G"
           mount_program = "/usr/bin/fuse-overlayfs"
           EOF
           
@@ -450,7 +450,7 @@ jobs:
 
       - name: Configure user namespaces for rootless podman
         run: |
-          # Ensure subuid/subgid entries exist for the current user (GitLab compatibility)
+          # Ensure subuid/subgid entries exist for the current user (GitHub Actions compatibility)
           RUNNER_UID=$(id -u)
           RUNNER_USER=$(id -un)
           
@@ -474,7 +474,7 @@ jobs:
           # Create storage directories on /mnt which has more space
           sudo mkdir -p /mnt/podman /mnt/tmp /mnt/containers
           
-          # Determine the actual user ID (GitLab runners often use 1000)
+          # Determine the actual user ID (GitHub Actions runners often use 1001)
           RUNNER_UID=$(id -u)
           RUNNER_GID=$(id -g)
           echo "Configuring for user ID: $RUNNER_UID, group ID: $RUNNER_GID"
@@ -483,13 +483,14 @@ jobs:
           sudo chown -R $RUNNER_UID:$RUNNER_GID /mnt/podman /mnt/tmp /mnt/containers
           sudo chmod -R u+rwx,g+rx /mnt/podman /mnt/tmp /mnt/containers
           
-          # Ensure HOME directory is writable (important for GitLab runners)
+          # Ensure HOME directory is writable (important for GitHub Actions)
           sudo chown -R $RUNNER_UID:$RUNNER_GID $HOME || true
           
           # Create user containers directory for rootless podman
           mkdir -p ~/.config/containers
           
           # Configure Podman storage for rootless operation
+          # Use all available free space without size limits
           tee ~/.config/containers/storage.conf << 'EOF'
           [storage]
           driver = "overlay"
@@ -497,7 +498,6 @@ jobs:
           runroot = "/mnt/containers"
           
           [storage.options]
-          size = "50G"
           mount_program = "/usr/bin/fuse-overlayfs"
           EOF
           
