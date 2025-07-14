@@ -167,11 +167,11 @@ jobs:
       - name: Configure Podman storage
         run: |
           # Create storage directories on /mnt which has more space
-          sudo mkdir -p /mnt/podman /run/containers /etc/containers
+          sudo mkdir -p /mnt/podman /run/containers /etc/containers /mnt/tmp
           
           # Set proper permissions for Podman storage
-          sudo chown -R root:root /mnt/podman /run/containers
-          sudo chmod -R u+rwx /mnt/podman /run/containers
+          sudo chown -R root:root /mnt/podman /run/containers /mnt/tmp
+          sudo chmod -R u+rwx /mnt/podman /run/containers /mnt/tmp
           
           # Configure Podman storage with optimizations
           sudo tee /etc/containers/storage.conf << 'EOF'
@@ -184,6 +184,11 @@ jobs:
           size = "50G"
           mount_program = "/usr/bin/fuse-overlayfs"
           EOF
+          
+          # Set environment variables for temporary directories
+          echo "TMPDIR=/mnt/tmp" >> $GITHUB_ENV
+          echo "TMP=/mnt/tmp" >> $GITHUB_ENV
+          echo "TEMP=/mnt/tmp" >> $GITHUB_ENV
           
           # Show available space
           df -h
@@ -204,6 +209,11 @@ jobs:
 
       - name: Build Base Image
         run: |
+          # Set temporary directory environment variables for this step
+          export TMPDIR=/mnt/tmp
+          export TMP=/mnt/tmp
+          export TEMP=/mnt/tmp
+          
           podman --storage-driver overlay build --squash-all \
             --format=oci \
             --tag ${{ steps.image_tags.outputs.TAG_LATEST }} \
@@ -218,6 +228,9 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 30
           command: |
+            export TMPDIR=/mnt/tmp
+            export TMP=/mnt/tmp
+            export TEMP=/mnt/tmp
             podman --storage-driver overlay push ${{ steps.image_tags.outputs.TAG_LATEST }}
             podman --storage-driver overlay push ${{ steps.image_tags.outputs.TAG_SHA }}
 
@@ -270,11 +283,11 @@ jobs:
       - name: Configure Podman storage
         run: |
           # Create storage directories on /mnt which has more space
-          sudo mkdir -p /mnt/podman /run/containers /etc/containers
+          sudo mkdir -p /mnt/podman /run/containers /etc/containers /mnt/tmp
           
           # Set proper permissions for Podman storage
-          sudo chown -R root:root /mnt/podman /run/containers
-          sudo chmod -R u+rwx /mnt/podman /run/containers
+          sudo chown -R root:root /mnt/podman /run/containers /mnt/tmp
+          sudo chmod -R u+rwx /mnt/podman /run/containers /mnt/tmp
           
           # Configure Podman storage with optimizations
           sudo tee /etc/containers/storage.conf << 'EOF'
@@ -287,6 +300,11 @@ jobs:
           size = "50G"
           mount_program = "/usr/bin/fuse-overlayfs"
           EOF
+          
+          # Set environment variables for temporary directories
+          echo "TMPDIR=/mnt/tmp" >> $GITHUB_ENV
+          echo "TMP=/mnt/tmp" >> $GITHUB_ENV
+          echo "TEMP=/mnt/tmp" >> $GITHUB_ENV
           
           # Show available space
           df -h
@@ -303,11 +321,16 @@ jobs:
           OWNER_PATH="${{ needs.determine-image-owner.outputs.registry_owner_path }}"
           MODEL_SOURCE_URL="${OWNER_PATH}/${{ matrix.model_source }}:latest"
           
+          # Set temporary directory environment variables for this step
+          export TMPDIR=/mnt/tmp
+          export TMP=/mnt/tmp
+          export TEMP=/mnt/tmp
+          
           # Run ramalama with sudo to use the system-wide storage at /mnt/podman
-          ramalama convert ${{ matrix.model_gguf_url }} oci://${MODEL_SOURCE_URL}
+          sudo -E ramalama convert ${{ matrix.model_gguf_url }} oci://${MODEL_SOURCE_URL}
           
           # Push the image that was created by ramalama
-          podman push ${MODEL_SOURCE_URL}
+          TMPDIR=/mnt/tmp TMP=/mnt/tmp TEMP=/mnt/tmp podman push ${MODEL_SOURCE_URL}
           
       - name: Set success flag
         id: set-success
@@ -364,11 +387,11 @@ jobs:
       - name: Configure Podman storage  
         run: |
           # Create storage directories on /mnt which has more space
-          sudo mkdir -p /mnt/podman /run/containers /etc/containers
+          sudo mkdir -p /mnt/podman /run/containers /etc/containers /mnt/tmp
           
           # Set proper permissions for Podman storage
-          sudo chown -R root:root /mnt/podman /run/containers
-          sudo chmod -R u+rwx /mnt/podman /run/containers
+          sudo chown -R root:root /mnt/podman /run/containers /mnt/tmp
+          sudo chmod -R u+rwx /mnt/podman /run/containers /mnt/tmp
           
           # Configure Podman storage with optimizations
           sudo tee /etc/containers/storage.conf << 'EOF'
@@ -381,6 +404,11 @@ jobs:
           size = "50G"
           mount_program = "/usr/bin/fuse-overlayfs"
           EOF
+          
+          # Set environment variables for temporary directories
+          echo "TMPDIR=/mnt/tmp" >> $GITHUB_ENV
+          echo "TMP=/mnt/tmp" >> $GITHUB_ENV
+          echo "TEMP=/mnt/tmp" >> $GITHUB_ENV
           
           # Show available space
           df -h
@@ -395,11 +423,16 @@ jobs:
           
           echo "Checking if source image exists: ${MODEL_SOURCE_URL}"
           
+          # Set temporary directory environment variables for this step
+          export TMPDIR=/mnt/tmp
+          export TMP=/mnt/tmp
+          export TEMP=/mnt/tmp
+          
           # First login to registry
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
           
           # Try to pull the source image
-          if sudo podman --storage-driver overlay --root='/mnt/podman' --runroot='/run/containers' pull ${MODEL_SOURCE_URL}; then
+          if sudo -E podman --storage-driver overlay --root='/mnt/podman' --runroot='/run/containers' pull ${MODEL_SOURCE_URL}; then
             echo "source-available=true" >> $GITHUB_OUTPUT
             echo "✅ Source image found and pulled successfully"
           else
@@ -426,7 +459,12 @@ jobs:
       - name: Build ${{ matrix.name }} Image
         if: steps.check-source.outputs.source-available == 'true'
         run: |
-          sudo podman --storage-driver overlay --root='/mnt/podman' --runroot='/run/containers' build --squash-all \
+          # Set temporary directory environment variables for this step
+          export TMPDIR=/mnt/tmp
+          export TMP=/mnt/tmp
+          export TEMP=/mnt/tmp
+          
+          sudo -E podman --storage-driver overlay --root='/mnt/podman' --runroot='/run/containers' build --squash-all \
             --format=oci \
             --build-arg BASE_IMAGE_NAME=${{ needs.build-base-image.outputs.base_image_tag }} \
             --build-arg MODEL_SOURCE_NAME=${{ steps.image_tags.outputs.MODEL_SOURCE_URL }} \
@@ -443,8 +481,11 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 10
           command: |
-            sudo podman --storage-driver overlay --root='/mnt/podman' --runroot='/run/containers' push ${{ steps.image_tags.outputs.TAG_LATEST }}
-            sudo podman --storage-driver overlay --root='/mnt/podman' --runroot='/run/containers' push ${{ steps.image_tags.outputs.TAG_SHA }}
+            export TMPDIR=/mnt/tmp
+            export TMP=/mnt/tmp
+            export TEMP=/mnt/tmp
+            sudo -E podman --storage-driver overlay --root='/mnt/podman' --runroot='/run/containers' push ${{ steps.image_tags.outputs.TAG_LATEST }}
+            sudo -E podman --storage-driver overlay --root='/mnt/podman' --runroot='/run/containers' push ${{ steps.image_tags.outputs.TAG_SHA }}
             
 
 
