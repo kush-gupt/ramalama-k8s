@@ -416,9 +416,13 @@ jobs:
 
       - name: Install Ramalama
         run: |
+          # Create bin directory with proper permissions before installation
+          sudo mkdir -p /home/bin
+          sudo chown -R $(id -u):$(id -g) /home/bin
+          
           # Add ramalama bin directory to PATH before installation
-          echo "/home/runner/bin" >> $GITHUB_PATH
-          export PATH="/home/runner/bin:$PATH"
+          echo "/home/bin" >> $GITHUB_PATH
+          export PATH="/home/bin:$PATH"
           
           # Install ramalama
           curl -fsSL https://ramalama.ai/install.sh | bash
@@ -429,6 +433,7 @@ jobs:
           df -h
           echo "Storage:"
           echo "  - Ramalama store: /home/runner/ramalama/store (root filesystem - 59G available)"
+          echo "  - Ramalama binaries: /home/bin"
           echo "  - Podman storage: /mnt/podman (mnt filesystem - 66G available)"
           echo "  - Total available: ~125G across both filesystems"
           echo "XDG directories configured as backup:"
