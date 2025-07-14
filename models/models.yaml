@@ -2,6 +2,25 @@
 # This file contains the configuration for all models in the repository
 
 models:
+  qwen3-1b:
+    name: "Qwen 3 1.7B"
+    description: "All-in-one Ramalama server with embedded Qwen3-1.7B Q4_K_XL.gguf Unsloth model."
+    model_source: "qwen-1b-source"
+    model_gguf_url: "hf://unsloth/Qwen3-1.7B-GGUF/Qwen3-1.7B-UD-Q4_K_XL.gguf"
+    model_file: "/models/Qwen3-1.7B-UD-Q4_K_XL.gguf/Qwen3-1.7B-UD-Q4_K_XL.gguf"
+    maintainer: "Kush Gupta"
+    parameters:
+      ctx_size: 32000
+      threads: 14
+      temp: 0.6
+      top_k: 20
+      top_p: 0.95
+      cache_reuse: 256
+    resources:
+      requests:
+        memory: "4Gi"
+        cpu: "2"
+
   qwen3-4b:
     name: "Qwen 3 4B"
     description: "All-in-one Ramalama server with embedded Qwen3-4B Q4_K_M.gguf Unsloth model."

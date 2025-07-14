@@ -1,0 +1,38 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: ramalama-qwen3-1b
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+
+resources:
+- ../base-model
+
+namePrefix: "qwen3-1b-"
+
+commonLabels:
+  app.kubernetes.io/instance: "qwen3-1b"
+  model: "qwen3-1b"
+
+configMapGenerator:
+- name: model-config
+  behavior: replace
+  literals:
+  - MODEL_NAME=qwen3-1b
+  - MODEL_FILE=/models/Qwen3-1.7B-UD-Q4_K_XL.gguf/Qwen3-1.7B-UD-Q4_K_XL.gguf
+  - ALIAS=qwen3-1b-model
+- name: ramalama-config
+  behavior: merge
+  literals:
+  - CTX_SIZE=32000
+  - THREADS=14
+  - TEMP=0.6
+  - TOP_K=20
+  - TOP_P=0.95
+  - CACHE_REUSE=256
+
+images:
+- name: MODEL_IMAGE
+  newName: "ghcr.io/kush-gupt/qwen3-1b-ramalama:latest"
+  newTag: latest 
