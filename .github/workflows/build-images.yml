@@ -417,7 +417,13 @@ jobs:
           echo "Podman storage configuration complete"
 
       - name: Install Ramalama
-        run: curl -fsSL https://ramalama.ai/install.sh | bash
+        run: |
+          # Add ramalama bin directory to PATH before installation
+          echo "/mnt/local/bin" >> $GITHUB_PATH
+          export PATH="/mnt/local/bin:$PATH"
+          
+          # Install ramalama
+          curl -fsSL https://ramalama.ai/install.sh | bash
 
       - name: Check disk space before conversion
         run: |
