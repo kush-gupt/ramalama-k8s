@@ -317,7 +317,7 @@ jobs:
           echo "Podman storage configuration complete"
 
       - name: Install Ramalama
-        run: curl -fsSL https://ramalama.ai/install.sh | bash
+        run: curl -fsSL https://ramalama.ai/install.sh | sudo bash
 
       - name: Log in to Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
