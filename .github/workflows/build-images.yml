@@ -141,13 +141,6 @@ jobs:
           sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
           sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
 
-      - name: Upgrade to Podman 5
-        run: |
-          sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu oracular universe"
-          sudo apt-get update
-          sudo apt-get purge firefox
-          sudo apt-get upgrade
-
       - name: Optimize Disk Space
         uses: hugoalh/disk-space-optimizer-ghaction@v0.8.0
         with:
@@ -164,48 +157,38 @@ jobs:
           npm_clean: "True"
           os_swap: "True"
 
-      - name: Reconfigure Docker storage
+      - name: Upgrade to Podman 5
         run: |
-          # Move Docker data to /mnt which has more space
-          sudo mkdir -p /mnt/docker /etc/docker /etc/containers
+          sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu oracular universe"
+          sudo apt-get update
+          sudo apt-get purge firefox
+          sudo apt-get upgrade
+
+      - name: Configure Podman storage
+        run: |
+          # Create storage directories on /mnt which has more space
+          sudo mkdir -p /mnt/podman /run/containers /etc/containers
           
-          # Configure Docker with storage optimizations
-          sudo tee /etc/docker/daemon.json << 'EOF'
-          {
-            "data-root": "/mnt/docker",
-            "storage-driver": "overlay2",
-            "storage-opts": [
-              "overlay2.override_kernel_check=true",
-              "overlay2.size=50G"
-            ],
-            "log-driver": "json-file",
-            "log-opts": {
-              "max-size": "10m",
-              "max-file": "3"
-            }
-          }
-          EOF
-          
-          sudo systemctl restart docker.service
-          sudo mkdir -p /run/containers
-          sudo chown -R root:root /run/containers
-          sudo chmod -R u+rwx /run/containers
+          # Set proper permissions for Podman storage
+          sudo chown -R root:root /mnt/podman /run/containers
+          sudo chmod -R u+rwx /mnt/podman /run/containers
           
           # Configure Podman storage with optimizations
           sudo tee /etc/containers/storage.conf << 'EOF'
           [storage]
           driver = "overlay"
-          graphroot = "/mnt/docker"
+          graphroot = "/mnt/podman"
           runroot = "/run/containers"
           
           [storage.options]
           override_kernel_check = "true"
           size = "50G"
+          mount_program = "/usr/bin/fuse-overlayfs"
           EOF
           
           # Show available space
           df -h
-          echo "Storage configuration complete"
+          echo "Podman storage configuration complete"
 
       - name: Log in to Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
@@ -262,13 +245,6 @@ jobs:
           sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
           sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
 
-      - name: Upgrade to Podman 5
-        run: |
-          sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu oracular universe"
-          sudo apt-get update
-          sudo apt-get purge firefox
-          sudo apt-get upgrade
-
       - name: Optimize Disk Space
         uses: hugoalh/disk-space-optimizer-ghaction@v0.8.0
         with:
@@ -285,48 +261,38 @@ jobs:
           npm_clean: "True"
           os_swap: "True"
 
-      - name: Reconfigure Docker storage
+      - name: Upgrade to Podman 5
         run: |
-          # Move Docker data to /mnt which has more space
-          sudo mkdir -p /mnt/docker /etc/docker /etc/containers
+          sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu oracular universe"
+          sudo apt-get update
+          sudo apt-get purge firefox
+          sudo apt-get upgrade
+
+      - name: Configure Podman storage
+        run: |
+          # Create storage directories on /mnt which has more space
+          sudo mkdir -p /mnt/podman /run/containers /etc/containers
           
-          # Configure Docker with storage optimizations
-          sudo tee /etc/docker/daemon.json << 'EOF'
-          {
-            "data-root": "/mnt/docker",
-            "storage-driver": "overlay2",
-            "storage-opts": [
-              "overlay2.override_kernel_check=true",
-              "overlay2.size=50G"
-            ],
-            "log-driver": "json-file",
-            "log-opts": {
-              "max-size": "10m",
-              "max-file": "3"
-            }
-          }
-          EOF
-          
-          sudo systemctl restart docker.service
-          sudo mkdir -p /run/containers
-          sudo chown -R root:root /run/containers
-          sudo chmod -R u+rwx /run/containers
+          # Set proper permissions for Podman storage
+          sudo chown -R root:root /mnt/podman /run/containers
+          sudo chmod -R u+rwx /mnt/podman /run/containers
           
           # Configure Podman storage with optimizations
           sudo tee /etc/containers/storage.conf << 'EOF'
           [storage]
           driver = "overlay"
-          graphroot = "/mnt/docker"
+          graphroot = "/mnt/podman"
           runroot = "/run/containers"
           
           [storage.options]
           override_kernel_check = "true"
           size = "50G"
+          mount_program = "/usr/bin/fuse-overlayfs"
           EOF
           
           # Show available space
           df -h
-          echo "Storage configuration complete"
+          echo "Podman storage configuration complete"
 
       - name: Install Ramalama
         run: curl -fsSL https://ramalama.ai/install.sh | bash
@@ -339,7 +305,7 @@ jobs:
           OWNER_PATH="${{ needs.determine-image-owner.outputs.registry_owner_path }}"
           MODEL_SOURCE_URL="${OWNER_PATH}/${{ matrix.model_source }}:latest"
           
-          # Run ramalama with sudo to use the system-wide storage at /mnt/docker
+          # Run ramalama with sudo to use the system-wide storage at /mnt/podman
           ramalama convert ${{ matrix.model_gguf_url }} oci://${MODEL_SOURCE_URL}
           
           # Push the image that was created by ramalama
@@ -374,13 +340,6 @@ jobs:
           sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
           sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
 
-      - name: Upgrade to Podman 5
-        run: |
-          sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu oracular universe"
-          sudo apt-get update
-          sudo apt-get purge firefox
-          sudo apt-get upgrade
-
       - name: Optimize Disk Space
         uses: hugoalh/disk-space-optimizer-ghaction@v0.8.0
         with:
@@ -397,48 +356,38 @@ jobs:
           npm_clean: "True"
           os_swap: "True"
 
-      - name: Reconfigure Docker storage  
+      - name: Upgrade to Podman 5
         run: |
-          # Move Docker data to /mnt which has more space
-          sudo mkdir -p /mnt/docker /etc/docker /etc/containers
+          sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu oracular universe"
+          sudo apt-get update
+          sudo apt-get purge firefox
+          sudo apt-get upgrade
+
+      - name: Configure Podman storage  
+        run: |
+          # Create storage directories on /mnt which has more space
+          sudo mkdir -p /mnt/podman /run/containers /etc/containers
           
-          # Configure Docker with storage optimizations
-          sudo tee /etc/docker/daemon.json << 'EOF'
-          {
-            "data-root": "/mnt/docker",
-            "storage-driver": "overlay2",
-            "storage-opts": [
-              "overlay2.override_kernel_check=true",
-              "overlay2.size=50G"
-            ],
-            "log-driver": "json-file",
-            "log-opts": {
-              "max-size": "10m",
-              "max-file": "3"
-            }
-          }
-          EOF
-          
-          sudo systemctl restart docker.service
-          sudo mkdir -p /run/containers
-          sudo chown -R root:root /run/containers
-          sudo chmod -R u+rwx /run/containers
+          # Set proper permissions for Podman storage
+          sudo chown -R root:root /mnt/podman /run/containers
+          sudo chmod -R u+rwx /mnt/podman /run/containers
           
           # Configure Podman storage with optimizations
           sudo tee /etc/containers/storage.conf << 'EOF'
           [storage]
           driver = "overlay"
-          graphroot = "/mnt/docker"
+          graphroot = "/mnt/podman"
           runroot = "/run/containers"
           
           [storage.options]
           override_kernel_check = "true"
           size = "50G"
+          mount_program = "/usr/bin/fuse-overlayfs"
           EOF
           
           # Show available space
           df -h
-          echo "Storage configuration complete"
+          echo "Podman storage configuration complete"
 
       - name: Check Source Image Availability
         id: check-source
@@ -453,7 +402,7 @@ jobs:
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
           
           # Try to pull the source image
-          if sudo podman --storage-driver overlay --root='/mnt/docker' --runroot='/run/containers' pull ${MODEL_SOURCE_URL}; then
+          if sudo podman --storage-driver overlay --root='/mnt/podman' --runroot='/run/containers' pull ${MODEL_SOURCE_URL}; then
             echo "source-available=true" >> $GITHUB_OUTPUT
             echo "✅ Source image found and pulled successfully"
           else
@@ -480,7 +429,7 @@ jobs:
       - name: Build ${{ matrix.name }} Image
         if: steps.check-source.outputs.source-available == 'true'
         run: |
-          sudo podman --storage-driver overlay --root='/mnt/docker' --runroot='/run/containers' build --squash-all \
+          sudo podman --storage-driver overlay --root='/mnt/podman' --runroot='/run/containers' build --squash-all \
             --format=oci \
             --build-arg BASE_IMAGE_NAME=${{ needs.build-base-image.outputs.base_image_tag }} \
             --build-arg MODEL_SOURCE_NAME=${{ steps.image_tags.outputs.MODEL_SOURCE_URL }} \
@@ -497,8 +446,8 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 10
           command: |
-            sudo podman --storage-driver overlay --root='/mnt/docker' --runroot='/run/containers' push ${{ steps.image_tags.outputs.TAG_LATEST }}
-            sudo podman --storage-driver overlay --root='/mnt/docker' --runroot='/run/containers' push ${{ steps.image_tags.outputs.TAG_SHA }}
+            sudo podman --storage-driver overlay --root='/mnt/podman' --runroot='/run/containers' push ${{ steps.image_tags.outputs.TAG_LATEST }}
+            sudo podman --storage-driver overlay --root='/mnt/podman' --runroot='/run/containers' push ${{ steps.image_tags.outputs.TAG_SHA }}
             
 
 
