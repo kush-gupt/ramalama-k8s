@@ -21,17 +21,8 @@ configMapGenerator:
     behavior: replace
     literals:
       - MODEL_NAME=Qwen 3 4B
-      - MODEL_FILE=/models/Qwen3-4B-Q4_K_M.gguf/Qwen3-4B-Q4_K_M.gguf
+      - MODEL_FILE=/mnt/models/Qwen3-4B-Q4_K_M.gguf/Qwen3-4B-Q4_K_M.gguf
       - ALIAS=qwen3-4b-model
-
-# Model-specific image
-images:
-  - name: MODEL_IMAGE
-    newName: ghcr.io/kush-gupt/qwen3-4b-ramalama
-    newTag: latest
-
-# Model-specific parameters via configmap merge
-configMapGenerator:
   - name: ramalama-config
     behavior: merge
     literals:
@@ -41,6 +32,12 @@ configMapGenerator:
       - TOP_K=20
       - TOP_P=0.95
       - CACHE_REUSE=256
+
+# Model-specific image
+images:
+  - name: MODEL_IMAGE
+    newName: ghcr.io/kush-gupt/qwen3-4b-ramalama
+    newTag: latest
 
 # Model-specific resource patches  
 patchesStrategicMerge:

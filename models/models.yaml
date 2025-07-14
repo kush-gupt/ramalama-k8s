@@ -7,7 +7,7 @@ models:
     description: "All-in-one Ramalama server with embedded Qwen3-1.7B Q4_K_XL.gguf Unsloth model."
     model_source: "qwen-1b-source"
     model_gguf_url: "hf://unsloth/Qwen3-1.7B-GGUF/Qwen3-1.7B-UD-Q4_K_XL.gguf"
-    model_file: "/models/Qwen3-1.7B-UD-Q4_K_XL.gguf/Qwen3-1.7B-UD-Q4_K_XL.gguf"
+    model_file: "/mnt/models/Qwen3-1.7B-UD-Q4_K_XL.gguf/Qwen3-1.7B-UD-Q4_K_XL.gguf"
     maintainer: "Kush Gupta"
     parameters:
       ctx_size: 32000
@@ -26,7 +26,7 @@ models:
     description: "All-in-one Ramalama server with embedded Qwen3-4B Q4_K_M.gguf Unsloth model."
     model_source: "qwen-4b-source"
     model_gguf_url: "hf://unsloth/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf"
-    model_file: "/models/Qwen3-4B-Q4_K_M.gguf/Qwen3-4B-Q4_K_M.gguf"
+    model_file: "/mnt/models/Qwen3-4B-Q4_K_M.gguf/Qwen3-4B-Q4_K_M.gguf"
     maintainer: "Kush Gupta"
     parameters:
       ctx_size: 20048
@@ -45,7 +45,7 @@ models:
     description: "All-in-one Ramalama server with embedded Qwen3-30B-A3B-UD-Q4_K_XL.gguf Unsloth model."
     model_source: "qwen-30b-source"
     model_gguf_url: "hf://unsloth/Qwen3-30B-A3B-GGUF/Qwen3-30B-A3B-UD-Q4_K_XL.gguf"
-    model_file: "/models/Qwen3-30B-A3B-UD-Q4_K_XL.gguf/Qwen3-30B-A3B-UD-Q4_K_XL.gguf"
+    model_file: "/mnt/models/Qwen3-30B-A3B-UD-Q4_K_XL.gguf/Qwen3-30B-A3B-UD-Q4_K_XL.gguf"
     maintainer: "Kush Gupta"
     parameters:
       ctx_size: 20048
@@ -64,7 +64,7 @@ models:
     description: "All-in-one Ramalama server with embedded Unsloth DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf"
     model_source: "deepseek-r1-qwen3-8b-source"
     model_gguf_url: "hf://unsloth/DeepSeek-R1-0528-Qwen3-8B-GGUF/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf"
-    model_file: "/models/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf"
+    model_file: "/mnt/models/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf"
     maintainer: "Kush Gupta"
     parameters:
       ctx_size: 20048

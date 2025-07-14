@@ -86,12 +86,12 @@ FROM ${{BASE_IMAGE_NAME}}
 ARG MODEL_SOURCE_NAME
 
 # Copy the entire /models directory from the model source
-# into the final application image.
-COPY --from=${{MODEL_SOURCE_NAME}} /models /models
+# into the final application image at /mnt/models.
+COPY --from=${{MODEL_SOURCE_NAME}} /models /mnt/models
 
 # This is a sanity check for OpenShift's random user ID.
 USER root
-RUN chmod -R a+rX /models
+RUN chmod -R a+rX /mnt/models
 USER 1001
 
 # Optional: Add labels to describe your new all-in-one image
@@ -135,7 +135,7 @@ configMapGenerator:
     behavior: replace
     literals:
       - MODEL_NAME={model_config.get('name', model_name_safe)}
-      - MODEL_FILE={model_config.get('model_file', '/models/model.gguf')}
+      - MODEL_FILE={model_config.get('model_file', '/mnt/models/model.gguf')}
       - ALIAS={model_name_safe}-model
 
 # Model-specific image

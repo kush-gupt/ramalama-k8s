@@ -20,7 +20,7 @@ configMapGenerator:
   behavior: replace
   literals:
   - MODEL_NAME=qwen3-1b
-  - MODEL_FILE=/models/Qwen3-1.7B-UD-Q4_K_XL.gguf/Qwen3-1.7B-UD-Q4_K_XL.gguf
+  - MODEL_FILE=/mnt/models/Qwen3-1.7B-UD-Q4_K_XL.gguf/Qwen3-1.7B-UD-Q4_K_XL.gguf
   - ALIAS=qwen3-1b-model
 - name: ramalama-config
   behavior: merge

@@ -112,7 +112,7 @@ podman run -it --rm -p 8080:8080 \
   ${APP_IMAGE_TAG} \
   llama-server.sh \
   --port 8080 \
-  --model /models/Qwen3-4B-Q4_K_M.gguf/Qwen3-4B-Q4_K_M.gguf \
+  --model /mnt/models/Qwen3-4B-Q4_K_M.gguf/Qwen3-4B-Q4_K_M.gguf \
   --no-warmup --jinja --log-colors \
   --alias qwen-model \
   --ctx-size 20048 --cache-reuse 256 -ngl -1 --threads 14 \
@@ -198,7 +198,7 @@ This repository now includes a model management system that makes it easy to add
   --name "llama-7b" \
   --description "Llama 7B Chat model" \
   --model-source "quay.io/user/llama-7b:latest" \
-  --model-file "/models/llama-7b.gguf/llama-7b.gguf"
+  --model-file "/mnt/models/llama-7b.gguf/llama-7b.gguf"
 
 # List all models
 ./scripts/list-models.sh

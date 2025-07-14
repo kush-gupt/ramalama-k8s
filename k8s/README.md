@@ -2,6 +2,10 @@
 
 This directory contains GitOps-compatible Kubernetes manifests for deploying Ramalama LLM models using Kustomize and ArgoCD.
 
+## Important: Model Path Changes
+
+**Note**: All configurations in this directory now use `/mnt/models/` paths instead of `/models/` for model files. This change provides better alignment with container runtime expectations and default execution behavior. If you have existing deployments, you may need to update your configurations and rebuild your container images.
+
 ## Directory Structure
 
 ```
@@ -93,7 +97,7 @@ Use the model management scripts with the new GitOps structure:
   --name "llama-7b" \
   --description "Llama 7B Chat model" \
   --model-source "quay.io/user/llama-7b:latest" \
-  --model-file "/models/llama-7b.gguf/llama-7b.gguf"
+  --model-file "/mnt/models/llama-7b.gguf/llama-7b.gguf"
 ```
 
 This creates:
@@ -115,7 +119,7 @@ configMapGenerator:
 - name: model-config
   literals:
   - MODEL_NAME=Llama 7B
-  - MODEL_FILE=/models/llama-7b.gguf
+  - MODEL_FILE=/mnt/models/llama-7b.gguf
   - ALIAS=llama-7b-model
 - name: ramalama-config
   behavior: merge

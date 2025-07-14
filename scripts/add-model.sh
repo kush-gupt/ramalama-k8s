@@ -40,7 +40,7 @@ Options:
     -n, --name           Model name (e.g., llama-7b, mistral-7b)
     -d, --description    Model description
     -u, --model-gguf-url Model GGUF URL (e.g., hf://...)
-    -f, --model-file     Model file path inside container (e.g., /models/model.gguf/model.gguf)
+    -f, --model-file     Model file path inside container (e.g., /mnt/models/model.gguf/model.gguf)
     -s, --model-source   Model source image basename (optional, defaults to MODEL_NAME-source)
     -c, --config         Use config file (optional)
     --registry-path     Container registry path for images (default: ghcr.io/kush-gupt)
@@ -62,7 +62,7 @@ Examples:
     $0 --name llama-7b \\
        --description "Llama 7B model" \\
        --model-gguf-url "hf://ggml-org/llama-7b/llama-7b.gguf" \\
-       --model-file "/models/llama-7b.gguf/llama-7b.gguf"
+       --model-file "/mnt/models/llama-7b.gguf/llama-7b.gguf"
     
     # Using config file
     $0 --config models/llama-7b.conf

@@ -21,17 +21,8 @@ configMapGenerator:
     behavior: replace
     literals:
       - MODEL_NAME=DeepSeek R1 Qwen3 8B
-      - MODEL_FILE=/models/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf
+      - MODEL_FILE=/mnt/models/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf
       - ALIAS=deepseek-r1-qwen3-8b-model
-
-# Model-specific image
-images:
-  - name: MODEL_IMAGE
-    newName: ghcr.io/kush-gupt/deepseek-r1-qwen3-8b-ramalama
-    newTag: latest
-
-# Model-specific parameters via configmap merge
-configMapGenerator:
   - name: ramalama-config
     behavior: merge
     literals:
@@ -41,6 +32,12 @@ configMapGenerator:
       - TOP_K=20
       - TOP_P=0.95
       - CACHE_REUSE=256
+
+# Model-specific image
+images:
+  - name: MODEL_IMAGE
+    newName: ghcr.io/kush-gupt/deepseek-r1-qwen3-8b-ramalama
+    newTag: latest
 
 # Model-specific resource patches  
 patchesStrategicMerge:

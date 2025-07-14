@@ -11,6 +11,27 @@ The model management system consists of several components:
 3. **Template system for consistency**
 4. **Automated generation of all required files**
 
+## Important Path Changes
+
+**Note**: This repository now uses `/mnt/models/` paths instead of `/models/` for all model files. This change provides better alignment with container runtime expectations and default execution behavior.
+
+### What Changed
+
+- **Default model file paths**: All examples and defaults now use `/mnt/models/`
+- **Container images**: Models are copied to `/mnt/models/` inside containers
+- **Configuration files**: All `.conf` files and `models.yaml` use `/mnt/models/` paths
+- **Kubernetes deployments**: All k8s configurations reference `/mnt/models/` paths
+
+### Migration
+
+If you have existing configurations:
+
+1. **Update model file paths** in your configurations to use `/mnt/models/` instead of `/models/`
+2. **Rebuild container images** with the updated Containerfiles
+3. **Update any custom scripts** that reference the old paths
+
+The CLI parameters still accept any path you specify, so you can override the defaults if needed.
+
 ## Quick Start
 
 ### Adding a New Model (Interactive)
@@ -27,7 +48,7 @@ The model management system consists of several components:
   --name "llama-7b" \
   --description "Llama 7B Chat model" \
   --model-source "quay.io/user/llama-7b:latest" \
-  --model-file "/models/llama-7b.gguf/llama-7b.gguf" \
+  --model-file "/mnt/models/llama-7b.gguf/llama-7b.gguf" \
   --ctx-size 4096 \
   --temp 0.7
 ```
@@ -71,7 +92,7 @@ models:
     name: "Human Readable Name"
     description: "Model description for labels"
     model_source: "registry/image:tag"
-    model_file: "/models/path/to/model.gguf"
+    model_file: "/mnt/models/path/to/model.gguf"
     maintainer: "Maintainer Name"
     template: "llama"  # Optional: use predefined template
     resource_size: "medium"  # small/medium/large for template resources
@@ -190,7 +211,7 @@ Adds a new model to the repository.
   --name "mistral-7b" \
   --description "Mistral 7B Instruct model" \
   --model-source "quay.io/user/mistral-7b:latest" \
-  --model-file "/models/mistral-7b.gguf/mistral-7b.gguf" \
+  --model-file "/mnt/models/mistral-7b.gguf/mistral-7b.gguf" \
   --ctx-size 8192 \
   --temp 0.6 \
   --maintainer "Your Name"
