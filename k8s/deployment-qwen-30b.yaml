@@ -32,7 +32,7 @@ spec:
         - '--port'
         - '8080'
         - '--model'
-        - '/models/Qwen3-30B-A3B-UD-Q4_K_XL.gguf/Qwen3-30B-A3B-UD-Q4_K_XL.gguf'
+        - '/mnt/models/Qwen3-30B-A3B-UD-Q4_K_XL.gguf/Qwen3-30B-A3B-UD-Q4_K_XL.gguf'
         - '--no-warmup'
         - '--jinja'
         - '--log-colors'

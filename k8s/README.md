@@ -6,6 +6,16 @@ This directory contains GitOps-compatible Kubernetes manifests for deploying Ram
 
 **Note**: All configurations in this directory now use `/mnt/models/` paths instead of `/models/` for model files. This change provides better alignment with container runtime expectations and default execution behavior. If you have existing deployments, you may need to update your configurations and rebuild your container images.
 
+**Standard Model Path Format**: All model files must be referenced using the format:
+```
+/mnt/models/Model-Name.gguf/Model-Name.gguf
+```
+
+Examples:
+- `/mnt/models/Qwen3-1.7B-UD-Q4_K_XL.gguf/Qwen3-1.7B-UD-Q4_K_XL.gguf`
+- `/mnt/models/Qwen3-4B-Q4_K_M.gguf/Qwen3-4B-Q4_K_M.gguf`
+- `/mnt/models/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf`
+
 ## Directory Structure
 
 ```

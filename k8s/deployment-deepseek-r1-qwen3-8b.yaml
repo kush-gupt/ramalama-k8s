@@ -32,7 +32,7 @@ spec:
         - '--port'
         - '8080'
         - '--model'
-        - '/models/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf'
+        - '/mnt/models/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf'
         - '--no-warmup'
         - '--jinja'
         - '--log-colors'
