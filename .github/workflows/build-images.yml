@@ -341,9 +341,6 @@ jobs:
             /mnt/podman/storage
             /mnt/podman/containers
             /mnt/tmp
-            /mnt/local/share
-            /mnt/cache
-            /mnt/config
           key: model-storage-${{ matrix.key }}-${{ runner.os }}-${{ hashFiles('models/models.yaml', 'containerfiles/Containerfile-min') }}
           restore-keys: |
             model-storage-${{ matrix.key }}-${{ runner.os }}-
@@ -396,14 +393,15 @@ jobs:
           echo "TMP=/mnt/tmp" >> $GITHUB_ENV
           echo "TEMP=/mnt/tmp" >> $GITHUB_ENV
           
-          # Create ramalama storage directories on /mnt
-          sudo mkdir -p /mnt/local/share/ramalama/store /mnt/cache /mnt/config
-          sudo chown -R $RUNNER_UID:$RUNNER_GID /mnt/local /mnt/cache /mnt/config
+          # Create ramalama storage directories on / (root filesystem - 59G available)
+          sudo mkdir -p /home/runner/ramalama/store /home/runner/cache /home/runner/config
+          sudo chown -R $RUNNER_UID:$RUNNER_GID /home/runner/ramalama /home/runner/cache /home/runner/config
           
-          # Redirect XDG directories to /mnt for ramalama storage
-          echo "XDG_DATA_HOME=/mnt/local/share" >> $GITHUB_ENV
-          echo "XDG_CACHE_HOME=/mnt/cache" >> $GITHUB_ENV
-          echo "XDG_CONFIG_HOME=/mnt/config" >> $GITHUB_ENV
+          # Redirect XDG directories to / for ramalama storage (backup approach)
+          # Primary approach uses --store parameter in ramalama convert command
+          echo "XDG_DATA_HOME=/home/runner" >> $GITHUB_ENV
+          echo "XDG_CACHE_HOME=/home/runner/cache" >> $GITHUB_ENV
+          echo "XDG_CONFIG_HOME=/home/runner/config" >> $GITHUB_ENV
           
           # Show available space and cache info
           df -h /mnt
@@ -419,8 +417,8 @@ jobs:
       - name: Install Ramalama
         run: |
           # Add ramalama bin directory to PATH before installation
-          echo "/mnt/local/bin" >> $GITHUB_PATH
-          export PATH="/mnt/local/bin:$PATH"
+          echo "/home/runner/bin" >> $GITHUB_PATH
+          export PATH="/home/runner/bin:$PATH"
           
           # Install ramalama
           curl -fsSL https://ramalama.ai/install.sh | bash
@@ -429,9 +427,10 @@ jobs:
         run: |
           echo "Disk space before conversion:"
           df -h
-          echo "Available space on /mnt:"
-          df -h /mnt
-          echo "Ramalama store will use: /mnt/local/share/ramalama/store"
+          echo "Storage:"
+          echo "  - Ramalama store: /home/runner/ramalama/store (root filesystem - 59G available)"
+          echo "  - Podman storage: /mnt/podman (mnt filesystem - 66G available)"
+          echo "  - Total available: ~125G across both filesystems"
           echo "XDG directories configured as backup:"
           echo "XDG_DATA_HOME=$XDG_DATA_HOME"
           echo "XDG_CACHE_HOME=$XDG_CACHE_HOME"
@@ -451,7 +450,7 @@ jobs:
           export TEMP=/mnt/tmp
           
           # Run ramalama convert
-          ramalama --store /mnt/local/share/ramalama/store convert ${{ matrix.model_gguf_url }} oci://${MODEL_SOURCE_URL}
+          ramalama --store /home/runner/ramalama/store convert ${{ matrix.model_gguf_url }} oci://${MODEL_SOURCE_URL}
           
           # Push the image that was created by ramalama
           podman push ${MODEL_SOURCE_URL}
@@ -537,9 +536,6 @@ jobs:
             /mnt/podman/storage
             /mnt/podman/containers
             /mnt/tmp
-            /mnt/local/share
-            /mnt/cache
-            /mnt/config
           key: model-storage-${{ matrix.key }}-${{ runner.os }}-${{ hashFiles('models/models.yaml', 'containerfiles/Containerfile-min') }}
           restore-keys: |
             model-storage-${{ matrix.key }}-${{ runner.os }}-
@@ -592,14 +588,15 @@ jobs:
           echo "TMP=/mnt/tmp" >> $GITHUB_ENV
           echo "TEMP=/mnt/tmp" >> $GITHUB_ENV
           
-          # Create ramalama storage directories on /mnt
-          sudo mkdir -p /mnt/local/share/ramalama/store /mnt/cache /mnt/config
-          sudo chown -R $RUNNER_UID:$RUNNER_GID /mnt/local /mnt/cache /mnt/config
+          # Create ramalama storage directories on / (root filesystem - 59G available)
+          sudo mkdir -p /home/runner/ramalama/store /home/runner/cache /home/runner/config
+          sudo chown -R $RUNNER_UID:$RUNNER_GID /home/runner/ramalama /home/runner/cache /home/runner/config
           
-          # Redirect XDG directories to /mnt for ramalama storage
-          echo "XDG_DATA_HOME=/mnt/local/share" >> $GITHUB_ENV
-          echo "XDG_CACHE_HOME=/mnt/cache" >> $GITHUB_ENV
-          echo "XDG_CONFIG_HOME=/mnt/config" >> $GITHUB_ENV
+          # Redirect XDG directories to / for ramalama storage (backup approach)
+          # Primary approach uses --store parameter in ramalama convert command
+          echo "XDG_DATA_HOME=/home/runner" >> $GITHUB_ENV
+          echo "XDG_CACHE_HOME=/home/runner/cache" >> $GITHUB_ENV
+          echo "XDG_CONFIG_HOME=/home/runner/config" >> $GITHUB_ENV
           
           # Show available space and cache info
           df -h /mnt
