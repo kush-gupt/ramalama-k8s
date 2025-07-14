@@ -181,7 +181,6 @@ jobs:
           runroot = "/run/containers"
           
           [storage.options]
-          override_kernel_check = "true"
           size = "50G"
           mount_program = "/usr/bin/fuse-overlayfs"
           EOF
@@ -285,7 +284,6 @@ jobs:
           runroot = "/run/containers"
           
           [storage.options]
-          override_kernel_check = "true"
           size = "50G"
           mount_program = "/usr/bin/fuse-overlayfs"
           EOF
@@ -380,7 +378,6 @@ jobs:
           runroot = "/run/containers"
           
           [storage.options]
-          override_kernel_check = "true"
           size = "50G"
           mount_program = "/usr/bin/fuse-overlayfs"
           EOF
