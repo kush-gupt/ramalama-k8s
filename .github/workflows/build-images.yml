@@ -166,11 +166,15 @@ jobs:
           sudo mv /tmp/daemon.json /etc/docker/daemon.json
           cat /etc/docker/daemon.json
           sudo systemctl restart docker.service
+          sudo mkdir -p /run/containers
+          sudo chown -R root:root /run/containers
+          sudo chmod -R u+rwx /run/containers
           # Configure Podman storage
           sudo tee /etc/containers/storage.conf << 'EOF'
           [storage]
           driver = "overlay"
           graphroot = "/mnt/docker"
+          runroot = "/run/containers"
           EOF
           df -h
 
@@ -254,14 +258,15 @@ jobs:
           sudo mv /tmp/daemon.json /etc/docker/daemon.json
           cat /etc/docker/daemon.json
           sudo systemctl restart docker.service
-          sudo mkdir -p /run/user/1001/containers
-          sudo chown -R runner:runner /run/user/1001/containers
-          sudo chmod -R u+rwx /run/user/1001/containers
+          sudo mkdir -p /run/containers
+          sudo chown -R root:root /run/containers
+          sudo chmod -R u+rwx /run/containers
           # Configure Podman storage
           sudo tee /etc/containers/storage.conf << 'EOF'
           [storage]
           driver = "overlay"
           graphroot = "/mnt/docker"
+          runroot = "/run/containers"
           EOF
           df -h
 
@@ -336,11 +341,15 @@ jobs:
           sudo mv /tmp/daemon.json /etc/docker/daemon.json
           cat /etc/docker/daemon.json
           sudo systemctl restart docker.service
+          sudo mkdir -p /run/containers
+          sudo chown -R root:root /run/containers
+          sudo chmod -R u+rwx /run/containers
           # Configure Podman storage
           sudo tee /etc/containers/storage.conf << 'EOF'
           [storage]
           driver = "overlay"
           graphroot = "/mnt/docker"
+          runroot = "/run/containers"
           EOF
           df -h
 
@@ -357,7 +366,14 @@ jobs:
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
           
           # Try to pull the source image
-          sudo podman --storage-driver overlay --root='/mnt/docker' pull ${MODEL_SOURCE_URL}
+          if sudo podman --storage-driver overlay --root='/mnt/docker' --runroot='/run/containers' pull ${MODEL_SOURCE_URL}; then
+            echo "source-available=true" >> $GITHUB_OUTPUT
+            echo "✅ Source image found and pulled successfully"
+          else
+            echo "source-available=false" >> $GITHUB_OUTPUT
+            echo "❌ Source image not found or failed to pull"
+            exit 1
+          fi
 
       - name: Define Image Tags
         if: steps.check-source.outputs.source-available == 'true'
@@ -377,7 +393,7 @@ jobs:
       - name: Build ${{ matrix.name }} Image
         if: steps.check-source.outputs.source-available == 'true'
         run: |
-          sudo podman --storage-driver overlay --root='/mnt/docker' build --squash-all \
+          sudo podman --storage-driver overlay --root='/mnt/docker' --runroot='/run/containers' build --squash-all \
             --format=oci \
             --build-arg BASE_IMAGE_NAME=${{ needs.build-base-image.outputs.base_image_tag }} \
             --build-arg MODEL_SOURCE_NAME=${{ steps.image_tags.outputs.MODEL_SOURCE_URL }} \
@@ -394,8 +410,8 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 10
           command: |
-            sudo podman --storage-driver overlay --root='/mnt/docker' push ${{ steps.image_tags.outputs.TAG_LATEST }}
-            sudo podman --storage-driver overlay --root='/mnt/docker' push ${{ steps.image_tags.outputs.TAG_SHA }}
+            sudo podman --storage-driver overlay --root='/mnt/docker' --runroot='/run/containers' push ${{ steps.image_tags.outputs.TAG_LATEST }}
+            sudo podman --storage-driver overlay --root='/mnt/docker' --runroot='/run/containers' push ${{ steps.image_tags.outputs.TAG_SHA }}
             
 
 

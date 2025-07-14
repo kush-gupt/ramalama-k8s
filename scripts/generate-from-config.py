@@ -268,7 +268,7 @@ patchesStrategicMerge:
 
       - name: Build {model_config["name"]} app image
         run: |
-          sudo podman --storage-driver overlay --root='/mnt/docker' build --squash-all \\
+          sudo podman --storage-driver overlay --root='/mnt/docker' --runroot='/run/containers' build --squash-all \\
             --format=oci \\
             --build-arg BASE_IMAGE_NAME=${{{{ steps.image_details.outputs.BASE_IMAGE_ARG }}}} \\
             --build-arg MODEL_SOURCE_NAME={model_config.get('model_source', 'unknown')} \\
@@ -279,8 +279,8 @@ patchesStrategicMerge:
 
       - name: Push {model_config["name"]} app image
         run: |
-          sudo podman --storage-driver overlay --root='/mnt/docker' push ${{{{ steps.image_details.outputs.TAG_LATEST }}}}
-          sudo podman --storage-driver overlay --root='/mnt/docker' push ${{{{ steps.image_details.outputs.TAG_SHA }}}}"""
+          sudo podman --storage-driver overlay --root='/mnt/docker' --runroot='/run/containers' push ${{{{ steps.image_details.outputs.TAG_LATEST }}}}
+          sudo podman --storage-driver overlay --root='/mnt/docker' --runroot='/run/containers' push ${{{{ steps.image_details.outputs.TAG_SHA }}}}"""
         
         return job_content, env_var_name
 
