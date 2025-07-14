@@ -164,24 +164,53 @@ jobs:
           sudo apt-get purge firefox
           sudo apt-get upgrade
 
+      - name: Configure user namespaces for rootless podman
+        run: |
+          # Ensure subuid/subgid entries exist for the current user (GitLab compatibility)
+          RUNNER_UID=$(id -u)
+          RUNNER_USER=$(id -un)
+          
+          # Check if entries already exist
+          if ! grep -q "^$RUNNER_USER:" /etc/subuid; then
+            echo "$RUNNER_USER:100000:65536" | sudo tee -a /etc/subuid
+          fi
+          
+          if ! grep -q "^$RUNNER_USER:" /etc/subgid; then
+            echo "$RUNNER_USER:100000:65536" | sudo tee -a /etc/subgid
+          fi
+          
+          # Display current configuration
+          echo "Current subuid entries:"
+          grep "$RUNNER_USER" /etc/subuid || echo "No subuid entries found"
+          echo "Current subgid entries:"
+          grep "$RUNNER_USER" /etc/subgid || echo "No subgid entries found"
+
       - name: Configure Podman storage
         run: |
           # Create storage directories on /mnt which has more space
-          sudo mkdir -p /mnt/podman /run/containers /etc/containers /mnt/tmp
+          sudo mkdir -p /mnt/podman /mnt/tmp /mnt/containers
           
-          # Set proper permissions for Podman storage
-          sudo chown -R root:root /mnt/podman /run/containers
-          sudo chmod -R u+rwx /mnt/podman /run/containers
+          # Determine the actual user ID (GitLab runners often use 1000)
+          RUNNER_UID=$(id -u)
+          RUNNER_GID=$(id -g)
+          echo "Configuring for user ID: $RUNNER_UID, group ID: $RUNNER_GID"
           
-          # Set /mnt/tmp to be writable by all users for temporary files (sticky bit)
-          sudo chmod 1777 /mnt/tmp
+          # Set ownership to current user for rootless podman
+          sudo chown -R $RUNNER_UID:$RUNNER_GID /mnt/podman /mnt/tmp /mnt/containers
+          sudo chmod -R u+rwx,g+rx /mnt/podman /mnt/tmp /mnt/containers
           
-          # Configure Podman storage with optimizations
-          sudo tee /etc/containers/storage.conf << 'EOF'
+          # Ensure HOME directory is writable (important for GitLab runners)
+          sudo chown -R $RUNNER_UID:$RUNNER_GID $HOME || true
+          
+          # Create user containers directory for rootless podman
+          mkdir -p ~/.config/containers
+          
+          # Configure Podman storage for rootless operation
+          tee ~/.config/containers/storage.conf << 'EOF'
           [storage]
           driver = "overlay"
           graphroot = "/mnt/podman"
-          runroot = "/run/containers"
+          runroot = "/mnt/containers"
           
           [storage.options]
           size = "50G"
@@ -217,7 +246,7 @@ jobs:
           export TMP=/mnt/tmp
           export TEMP=/mnt/tmp
           
-          podman --storage-driver overlay build --squash-all \
+          podman build --squash-all \
             --format=oci \
             --tag ${{ steps.image_tags.outputs.TAG_LATEST }} \
             --tag ${{ steps.image_tags.outputs.TAG_SHA }} \
@@ -234,8 +263,8 @@ jobs:
             export TMPDIR=/mnt/tmp
             export TMP=/mnt/tmp
             export TEMP=/mnt/tmp
-            podman --storage-driver overlay push ${{ steps.image_tags.outputs.TAG_LATEST }}
-            podman --storage-driver overlay push ${{ steps.image_tags.outputs.TAG_SHA }}
+            podman push ${{ steps.image_tags.outputs.TAG_LATEST }}
+            podman push ${{ steps.image_tags.outputs.TAG_SHA }}
 
   build-source-images:
     name: Build Source Images
@@ -283,24 +312,53 @@ jobs:
           sudo apt-get purge firefox
           sudo apt-get upgrade
 
+      - name: Configure user namespaces for rootless podman
+        run: |
+          # Ensure subuid/subgid entries exist for the current user (GitLab compatibility)
+          RUNNER_UID=$(id -u)
+          RUNNER_USER=$(id -un)
+          
+          # Check if entries already exist
+          if ! grep -q "^$RUNNER_USER:" /etc/subuid; then
+            echo "$RUNNER_USER:100000:65536" | sudo tee -a /etc/subuid
+          fi
+          
+          if ! grep -q "^$RUNNER_USER:" /etc/subgid; then
+            echo "$RUNNER_USER:100000:65536" | sudo tee -a /etc/subgid
+          fi
+          
+          # Display current configuration
+          echo "Current subuid entries:"
+          grep "$RUNNER_USER" /etc/subuid || echo "No subuid entries found"
+          echo "Current subgid entries:"
+          grep "$RUNNER_USER" /etc/subgid || echo "No subgid entries found"
+
       - name: Configure Podman storage
         run: |
           # Create storage directories on /mnt which has more space
-          sudo mkdir -p /mnt/podman /run/containers /etc/containers /mnt/tmp
+          sudo mkdir -p /mnt/podman /mnt/tmp /mnt/containers
           
-          # Set proper permissions for Podman storage
-          sudo chown -R root:root /mnt/podman /run/containers
-          sudo chmod -R u+rwx /mnt/podman /run/containers
+          # Determine the actual user ID (GitLab runners often use 1000)
+          RUNNER_UID=$(id -u)
+          RUNNER_GID=$(id -g)
+          echo "Configuring for user ID: $RUNNER_UID, group ID: $RUNNER_GID"
           
-          # Set /mnt/tmp to be writable by all users for temporary files (sticky bit)
-          sudo chmod 1777 /mnt/tmp
+          # Set ownership to current user for rootless podman
+          sudo chown -R $RUNNER_UID:$RUNNER_GID /mnt/podman /mnt/tmp /mnt/containers
+          sudo chmod -R u+rwx,g+rx /mnt/podman /mnt/tmp /mnt/containers
           
-          # Configure Podman storage with optimizations
-          sudo tee /etc/containers/storage.conf << 'EOF'
+          # Ensure HOME directory is writable (important for GitLab runners)
+          sudo chown -R $RUNNER_UID:$RUNNER_GID $HOME || true
+          
+          # Create user containers directory for rootless podman
+          mkdir -p ~/.config/containers
+          
+          # Configure Podman storage for rootless operation
+          tee ~/.config/containers/storage.conf << 'EOF'
           [storage]
           driver = "overlay"
           graphroot = "/mnt/podman"
-          runroot = "/run/containers"
+          runroot = "/mnt/containers"
           
           [storage.options]
           size = "50G"
@@ -317,7 +375,7 @@ jobs:
           echo "Podman storage configuration complete"
 
       - name: Install Ramalama
-        run: curl -fsSL https://ramalama.ai/install.sh | sudo bash
+        run: curl -fsSL https://ramalama.ai/install.sh | bash
 
       - name: Log in to Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
@@ -332,11 +390,11 @@ jobs:
           export TMP=/mnt/tmp
           export TEMP=/mnt/tmp
           
-          # Run ramalama with sudo to use the system-wide storage at /mnt/podman
-          sudo -E ramalama convert ${{ matrix.model_gguf_url }} oci://${MODEL_SOURCE_URL}
+          # Run ramalama with rootless podman
+          ramalama convert ${{ matrix.model_gguf_url }} oci://${MODEL_SOURCE_URL}
           
           # Push the image that was created by ramalama
-          TMPDIR=/mnt/tmp TMP=/mnt/tmp TEMP=/mnt/tmp podman push ${MODEL_SOURCE_URL}
+          podman push ${MODEL_SOURCE_URL}
           
       - name: Set success flag
         id: set-success
@@ -390,24 +448,53 @@ jobs:
           sudo apt-get purge firefox
           sudo apt-get upgrade
 
+      - name: Configure user namespaces for rootless podman
+        run: |
+          # Ensure subuid/subgid entries exist for the current user (GitLab compatibility)
+          RUNNER_UID=$(id -u)
+          RUNNER_USER=$(id -un)
+          
+          # Check if entries already exist
+          if ! grep -q "^$RUNNER_USER:" /etc/subuid; then
+            echo "$RUNNER_USER:100000:65536" | sudo tee -a /etc/subuid
+          fi
+          
+          if ! grep -q "^$RUNNER_USER:" /etc/subgid; then
+            echo "$RUNNER_USER:100000:65536" | sudo tee -a /etc/subgid
+          fi
+          
+          # Display current configuration
+          echo "Current subuid entries:"
+          grep "$RUNNER_USER" /etc/subuid || echo "No subuid entries found"
+          echo "Current subgid entries:"
+          grep "$RUNNER_USER" /etc/subgid || echo "No subgid entries found"
+
       - name: Configure Podman storage  
         run: |
           # Create storage directories on /mnt which has more space
-          sudo mkdir -p /mnt/podman /run/containers /etc/containers /mnt/tmp
+          sudo mkdir -p /mnt/podman /mnt/tmp /mnt/containers
           
-          # Set proper permissions for Podman storage
-          sudo chown -R root:root /mnt/podman /run/containers
-          sudo chmod -R u+rwx /mnt/podman /run/containers
+          # Determine the actual user ID (GitLab runners often use 1000)
+          RUNNER_UID=$(id -u)
+          RUNNER_GID=$(id -g)
+          echo "Configuring for user ID: $RUNNER_UID, group ID: $RUNNER_GID"
           
-          # Set /mnt/tmp to be writable by all users for temporary files (sticky bit)
-          sudo chmod 1777 /mnt/tmp
+          # Set ownership to current user for rootless podman
+          sudo chown -R $RUNNER_UID:$RUNNER_GID /mnt/podman /mnt/tmp /mnt/containers
+          sudo chmod -R u+rwx,g+rx /mnt/podman /mnt/tmp /mnt/containers
           
-          # Configure Podman storage with optimizations
-          sudo tee /etc/containers/storage.conf << 'EOF'
+          # Ensure HOME directory is writable (important for GitLab runners)
+          sudo chown -R $RUNNER_UID:$RUNNER_GID $HOME || true
+          
+          # Create user containers directory for rootless podman
+          mkdir -p ~/.config/containers
+          
+          # Configure Podman storage for rootless operation
+          tee ~/.config/containers/storage.conf << 'EOF'
           [storage]
           driver = "overlay"
           graphroot = "/mnt/podman"
-          runroot = "/run/containers"
+          runroot = "/mnt/containers"
           
           [storage.options]
           size = "50G"
@@ -441,7 +528,7 @@ jobs:
           echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
           
           # Try to pull the source image
-          if sudo -E podman --storage-driver overlay --root='/mnt/podman' --runroot='/run/containers' pull ${MODEL_SOURCE_URL}; then
+          if podman pull ${MODEL_SOURCE_URL}; then
             echo "source-available=true" >> $GITHUB_OUTPUT
             echo "✅ Source image found and pulled successfully"
           else
@@ -473,7 +560,7 @@ jobs:
           export TMP=/mnt/tmp
           export TEMP=/mnt/tmp
           
-          sudo -E podman --storage-driver overlay --root='/mnt/podman' --runroot='/run/containers' build --squash-all \
+          podman build --squash-all \
             --format=oci \
             --build-arg BASE_IMAGE_NAME=${{ needs.build-base-image.outputs.base_image_tag }} \
             --build-arg MODEL_SOURCE_NAME=${{ steps.image_tags.outputs.MODEL_SOURCE_URL }} \
@@ -493,8 +580,8 @@ jobs:
             export TMPDIR=/mnt/tmp
             export TMP=/mnt/tmp
             export TEMP=/mnt/tmp
-            sudo -E podman --storage-driver overlay --root='/mnt/podman' --runroot='/run/containers' push ${{ steps.image_tags.outputs.TAG_LATEST }}
-            sudo -E podman --storage-driver overlay --root='/mnt/podman' --runroot='/run/containers' push ${{ steps.image_tags.outputs.TAG_SHA }}
+            podman push ${{ steps.image_tags.outputs.TAG_LATEST }}
+            podman push ${{ steps.image_tags.outputs.TAG_SHA }}
             
 
 
