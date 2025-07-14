@@ -170,8 +170,11 @@ jobs:
           sudo mkdir -p /mnt/podman /run/containers /etc/containers /mnt/tmp
           
           # Set proper permissions for Podman storage
-          sudo chown -R root:root /mnt/podman /run/containers /mnt/tmp
-          sudo chmod -R u+rwx /mnt/podman /run/containers /mnt/tmp
+          sudo chown -R root:root /mnt/podman /run/containers
+          sudo chmod -R u+rwx /mnt/podman /run/containers
+          
+          # Set /mnt/tmp to be writable by all users for temporary files (sticky bit)
+          sudo chmod 1777 /mnt/tmp
           
           # Configure Podman storage with optimizations
           sudo tee /etc/containers/storage.conf << 'EOF'
@@ -286,8 +289,11 @@ jobs:
           sudo mkdir -p /mnt/podman /run/containers /etc/containers /mnt/tmp
           
           # Set proper permissions for Podman storage
-          sudo chown -R root:root /mnt/podman /run/containers /mnt/tmp
-          sudo chmod -R u+rwx /mnt/podman /run/containers /mnt/tmp
+          sudo chown -R root:root /mnt/podman /run/containers
+          sudo chmod -R u+rwx /mnt/podman /run/containers
+          
+          # Set /mnt/tmp to be writable by all users for temporary files (sticky bit)
+          sudo chmod 1777 /mnt/tmp
           
           # Configure Podman storage with optimizations
           sudo tee /etc/containers/storage.conf << 'EOF'
@@ -390,8 +396,11 @@ jobs:
           sudo mkdir -p /mnt/podman /run/containers /etc/containers /mnt/tmp
           
           # Set proper permissions for Podman storage
-          sudo chown -R root:root /mnt/podman /run/containers /mnt/tmp
-          sudo chmod -R u+rwx /mnt/podman /run/containers /mnt/tmp
+          sudo chown -R root:root /mnt/podman /run/containers
+          sudo chmod -R u+rwx /mnt/podman /run/containers
+          
+          # Set /mnt/tmp to be writable by all users for temporary files (sticky bit)
+          sudo chmod 1777 /mnt/tmp
           
           # Configure Podman storage with optimizations
           sudo tee /etc/containers/storage.conf << 'EOF'
