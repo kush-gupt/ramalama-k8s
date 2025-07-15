@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
   name: ramalama-models
-  namespace: argocd
+  namespace: openshift-gitops
   labels:
     app.kubernetes.io/name: ramalama
     app.kubernetes.io/part-of: ramalama-k8s
@@ -35,6 +35,7 @@ spec:
   template:
     metadata:
       name: '{{path.basename}}-{{env}}'
+      namespace: openshift-gitops
       labels:
         app.kubernetes.io/name: ramalama
         app.kubernetes.io/component: llm-server
@@ -70,6 +71,7 @@ spec:
           - PrunePropagationPolicy=foreground
           - PruneLast=true
           - RespectIgnoreDifferences=true
+          - ServerSideApply=true
         retry:
           limit: 5
           backoff:
@@ -89,6 +91,11 @@ spec:
         kind: ConfigMap
         jsonPointers:
         - /data
+      - group: "project.openshift.io"
+        kind: Project
+        jsonPointers:
+        - /metadata/annotations
+        - /metadata/labels
         
       info:
       - name: 'Model:'

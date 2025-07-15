@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
   name: openshift-lightspeed-models
-  namespace: argocd
+  namespace: openshift-gitops
   labels:
     app.kubernetes.io/name: openshift-lightspeed
     app.kubernetes.io/part-of: ramalama-k8s
@@ -20,6 +20,7 @@ spec:
   template:
     metadata:
       name: 'openshift-lightspeed-{{path.basename}}'
+      namespace: openshift-gitops
       labels:
         app.kubernetes.io/name: openshift-lightspeed
         app.kubernetes.io/component: ai-assistant
@@ -50,6 +51,7 @@ spec:
           - PrunePropagationPolicy=foreground
           - PruneLast=true
           - RespectIgnoreDifferences=true
+          - ServerSideApply=true
         retry:
           limit: 5
           backoff:
@@ -69,6 +71,11 @@ spec:
         kind: Secret
         jsonPointers:
         - /data
+      - group: "project.openshift.io"
+        kind: Project
+        jsonPointers:
+        - /metadata/annotations
+        - /metadata/labels
         
       info:
       - name: 'Component:'

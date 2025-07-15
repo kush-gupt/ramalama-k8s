@@ -201,19 +201,25 @@ kubectl apply -k k8s/models/qwen3-30b
 kubectl apply -k k8s/models/deepseek-r1-qwen3-8b
 ```
 
-### 🔄 GitOps with ArgoCD
+### 🔄 GitOps with OpenShift GitOps
 
 For automated deployments with environment-specific configurations:
 
 ```bash
-# Single model with environment overlay (ArgoCD Application)
-kubectl apply -f k8s/argocd/application-example.yaml
+# Ensure OpenShift GitOps is installed
+oc get csv -n openshift-gitops-operator | grep gitops
 
-# All models across environments (ArgoCD ApplicationSet)
-kubectl apply -f k8s/argocd/applicationset-example.yaml
+# Single model with environment overlay (Application)
+oc apply -f k8s/argocd/application-example.yaml
+
+# All models across environments (ApplicationSet)  
+oc apply -f k8s/argocd/applicationset-example.yaml
+
+# Monitor deployments
+oc get applications -n openshift-gitops
 ```
 > [!IMPORTANT]  
-> Environment overlays (`k8s/overlays/dev` and `k8s/overlays/production`) are designed to work with ArgoCD's kustomize overlay feature, not standalone kubectl deployments. They are applied automatically when using the ArgoCD ApplicationSet.
+> Environment overlays (`k8s/overlays/dev` and `k8s/overlays/production`) are designed to work with OpenShift GitOps kustomize overlay feature, not standalone kubectl deployments. They are applied automatically when using the ApplicationSet.
 
 ## 🤖 OpenShift Lightspeed Integration
 
@@ -224,7 +230,7 @@ Get AI-powered assistance for your OpenShift cluster management! Deploy OpenShif
 ### ⚡ Quick Deploy Lightspeed
 
 ```bash
-# Deploy with ArgoCD (all models)
+# Deploy with OpenShift GitOps if installed (all models)
 oc apply -f k8s/lightspeed/argocd/applicationset-lightspeed.yaml
 
 # Deploy for specific model

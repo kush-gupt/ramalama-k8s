@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: ramalama-qwen-4b-dev
-  namespace: argocd
+  namespace: openshift-gitops
   labels:
     app.kubernetes.io/name: ramalama
     app.kubernetes.io/component: llm-server
@@ -31,6 +31,7 @@ spec:
       - CreateNamespace=true
       - PrunePropagationPolicy=foreground
       - PruneLast=true
+      - ServerSideApply=true
     retry:
       limit: 5
       backoff:
@@ -46,6 +47,11 @@ spec:
     kind: Deployment
     jsonPointers:
     - /spec/replicas
+  - group: "project.openshift.io"
+    kind: Project
+    jsonPointers:
+    - /metadata/annotations
+    - /metadata/labels
     
   info:
   - name: 'Model:'

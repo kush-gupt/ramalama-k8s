@@ -34,20 +34,26 @@ Before deploying OpenShift Lightspeed, ensure you have:
 - **🔑 Cluster Admin Access**: Required for operator installation
 - **☸️ OpenShift 4.15+**: Minimum supported version
 - **🚀 Ramalama Models**: At least one ramalama model deployed (see [main README](../../README.md))
-- **🔧 ArgoCD (Optional)**: For GitOps deployment
+- **🔧 OpenShift GitOps (Optional)**: For GitOps deployment (Red Hat's ArgoCD distribution)
 
 ## ⚡ Quick Start
 
-### Option 1: Deploy with ArgoCD
+### Option 1: Deploy with OpenShift GitOps
 
-If you have ArgoCD installed, you can deploy using our ApplicationSet:
+If you have OpenShift GitOps installed, you can deploy using our ApplicationSet:
 
 ```bash
+# Ensure OpenShift GitOps is installed and ready
+oc get csv -n openshift-gitops-operator | grep gitops
+
 # Deploy all lightspeed configurations for all models
 oc apply -f k8s/lightspeed/argocd/applicationset-lightspeed.yaml
 
 # Or deploy for a specific model
 oc apply -f k8s/lightspeed/argocd/application-qwen3-4b.yaml
+
+# Check GitOps applications
+oc get applications -n openshift-gitops
 ```
 
 ### Option 2: Direct Kustomize Deployment
@@ -166,9 +172,16 @@ oc auth can-i '*' '*' --all-namespaces
 
 Choose your deployment method:
 
-#### Method A: ArgoCD ApplicationSet (All Models)
+#### Method A: OpenShift GitOps ApplicationSet (All Models)
 ```bash
+# Ensure OpenShift GitOps is ready
+oc get pods -n openshift-gitops
+
+# Deploy ApplicationSet
 oc apply -f k8s/lightspeed/argocd/applicationset-lightspeed.yaml
+
+# Monitor deployment
+oc get applications -n openshift-gitops -w
 ```
 
 #### Method B: Specific Model
@@ -217,7 +230,7 @@ oc get all -n openshift-lightspeed
 ## 🎉 Quick Commands Summary
 
 ```bash
-# Deploy with ArgoCD (all models)
+# Deploy with OpenShift GitOps (all models)
 oc apply -f k8s/lightspeed/argocd/applicationset-lightspeed.yaml
 
 # Deploy specific model
@@ -225,6 +238,9 @@ oc apply -k k8s/lightspeed/overlays/qwen3-4b
 
 # Deploy with auto-discovery
 oc apply -k k8s/lightspeed/overlays/auto-discovery
+
+# Check GitOps applications
+oc get applications -n openshift-gitops
 
 # Check status
 oc get olsconfig,pods,svc -n openshift-lightspeed

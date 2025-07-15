@@ -54,7 +54,7 @@ k8s/
 
 ### GitOps Compatibility
 - **Declarative Configuration**: All resources defined as code
-- **ArgoCD Sync Waves**: Proper deployment ordering
+- **OpenShift GitOps Sync Waves**: Proper deployment ordering
 - **Simplified Namespace Structure**: All models deploy to `ramalama` namespace
 - **Automated Deployment**: No manual kubectl required
 
@@ -158,7 +158,7 @@ configMapGenerator:
 - Pod security standards enforced
 - Stable image tags
 
-## ArgoCD Integration
+## OpenShift GitOps Integration
 
 ### Application Pattern
 For deploying a single model to a specific environment:
@@ -243,8 +243,8 @@ spec:
 
 3. **ArgoCD Sync Issues**
    ```bash
-   # Check application status
-argocd app get ramalama-qwen3-4b-dev
+# Check application status
+oc get application ramalama-qwen3-4b-dev -n openshift-gitops -o yaml
 ```
 
 ### Debugging Commands
@@ -267,7 +267,7 @@ If migrating from the old deployment structure:
 1. **Backup existing deployments**
 2. **Generate new kustomizations** using updated scripts
 3. **Test in dev environment** first
-4. **Update ArgoCD applications** to use new paths
+4. **Update OpenShift GitOps applications** to use new paths
 5. **Remove old deployment files**
 
 The migration scripts handle this automatically when regenerating configurations.
@@ -287,5 +287,5 @@ When adding new features:
 1. Update base templates if needed
 2. Test with multiple environments
 3. Update documentation
-4. Ensure ArgoCD compatibility
+4. Ensure OpenShift GitOps compatibility
 5. Add proper labels and annotations 
