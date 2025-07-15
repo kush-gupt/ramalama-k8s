@@ -1,0 +1,48 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: openshift-lightspeed-qwen3-30b
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+
+resources:
+  - ../../base
+
+patches:
+  - target:
+      kind: OLSConfig
+      name: cluster
+    patch: |-
+      - op: replace
+        path: /spec/llm/providers/0/url
+        value: http://qwen3-30b-ramalama-service.ramalama.svc.cluster.local:8080/v1
+      - op: replace
+        path: /spec/llm/providers/0/models/0/name
+        value: default
+      - op: add
+        path: /metadata/labels/model
+        value: qwen3-30b
+      - op: add
+        path: /metadata/labels/environment
+        value: qwen3-30b
+  - target:
+      kind: Secret
+      name: credentials
+    patch: |-
+      - op: add
+        path: /metadata/labels/model
+        value: qwen3-30b
+      - op: add
+        path: /metadata/labels/environment
+        value: qwen3-30b
+  - target:
+      kind: Subscription
+      name: lightspeed-operator
+    patch: |-
+      - op: add
+        path: /metadata/labels/model
+        value: qwen3-30b
+      - op: add
+        path: /metadata/labels/environment
+        value: qwen3-30b 

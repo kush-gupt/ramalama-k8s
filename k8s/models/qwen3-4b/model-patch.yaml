@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ramalama-deployment
+spec:
+  template:
+    spec:
+      containers:
+      - name: ramalama
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2"

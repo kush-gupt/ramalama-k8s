@@ -1,0 +1,40 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: ramalama-base
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+
+namespace: ramalama
+
+resources:
+  - service.yaml
+  - configmap.yaml
+
+labels:
+  - includeSelectors: false
+    pairs:
+      app.kubernetes.io/name: ramalama
+      app.kubernetes.io/part-of: ramalama-k8s
+      app.kubernetes.io/managed-by: kustomize
+
+commonAnnotations:
+  argocd.argoproj.io/managed: "true"
+
+images:
+  - name: MODEL_IMAGE
+    newTag: latest
+
+# Base configuration for all models
+configMapGenerator:
+  - name: ramalama-config
+    behavior: merge
+    literals:
+      - PORT=8080
+      - HOST=0.0.0.0
+      - LOG_COLORS=true
+      - NO_WARMUP=true
+      - JINJA=true
+      - NGL=-1
+      - MIN_P=0 

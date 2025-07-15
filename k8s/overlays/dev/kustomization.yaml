@@ -1,0 +1,60 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: ramalama-dev
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+
+namespace: ramalama
+
+resources:
+  - ../../base
+  - ../../models/base-model/deployment.yaml
+  - namespace.yaml
+
+labels:
+  - includeSelectors: true
+    pairs:
+      environment: dev
+      version: latest
+
+commonAnnotations:
+  argocd.argoproj.io/sync-options: CreateNamespace=true
+
+# Development-specific configuration
+configMapGenerator:
+  - name: ramalama-config
+    behavior: merge
+    literals:
+      - LOG_LEVEL=debug
+      - THREADS=4
+      - CTX_SIZE=2048
+  - name: model-config
+    behavior: replace
+    literals:
+      - MODEL_NAME=dev-model
+      - MODEL_FILE=/mnt/models/model.file
+      - ALIAS=dev-model
+
+# Apply base security and health check patches first
+patches:
+  - path: ../../models/base-model/deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: ramalama-deployment
+  # Then apply development resource limits
+  - path: resources-patch.yaml
+    target:
+      kind: Deployment
+      name: ramalama-deployment
+
+# Development-specific image tags
+images:
+  - name: MODEL_IMAGE
+    newName: ghcr.io/kush-gupt/centos-ramalama-min
+    newTag: latest
+
+replicas:
+  - name: ramalama-deployment
+    count: 1 

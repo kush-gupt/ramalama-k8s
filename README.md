@@ -1,169 +1,427 @@
-# Ramalama Modelcar Images
+# 🚀 Ramalama Kubernetes - Easy LLM Deployment Made Simple
 
-This repository contains the necessary files to build minimal modelcar images with Ramalama to easily serve GGUFs with a single container in Kubernetes or OpenShift using `llama.cpp`.
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Kubernetes](https://img.shields.io/badge/kubernetes-%23326ce5.svg?style=flat&logo=kubernetes&logoColor=white)](https://kubernetes.io)
+[![OpenShift](https://img.shields.io/badge/OpenShift-EE0000?style=flat&logo=redhatopenshift&logoColor=white)](https://openshift.com)
 
-The images are intended to be built using Podman and include a base image with dependencies and demo application images with specific models.
+> **Deploy powerful Language Models (LLMs) in Kubernetes with just a few commands!**
 
-## Repository Structure
+## What is this?
 
-The repository is organized as follows:
+Ramalama with Kubernetes makes it incredibly easy to run your own ChatGPT-like AI models in Kubernetes or OpenShift. Whether you're a developer, DevOps engineer, or AI enthusiast, this project helps you:
 
+- **Get started quickly** - Deploy AI models in minutes, not hours
+- **Use familiar tools** - Works with Docker, Kubernetes, and standard GitOps workflows
+- **Production ready** - Includes monitoring, scaling, and security best practices
+- **Model variety** - Support for multiple LLM models and sizes
+- **Enterprise grade** - Built for OpenShift with proper RBAC and security policies
+
+## Features
+
+### **GitOps Architecture**
+```mermaid
+graph LR
+    A[📝 Git Repo] --> B[🔄 ArgoCD]
+    B --> C[☸️ Kubernetes]
+    C --> D[🤖 LLM Models]
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#e8f5e8
+    style D fill:#fff3e0
 ```
-.
-├── .github/workflows/        
-│   └── build-images.yml      # CI pipeline for building and pushing images
-├── containerfiles/
-│   ├── Containerfile-min         # Builds the base image           
-│   ├── Containerfile-qwen-4b     # Builds the Qwen-4B application image
-│   └── Containerfile-qwen-30b    # Builds the Qwen-30B MOE application image
-├── k8s/                      # Kubernetes manifests
-│   ├── deployment-qwen-4b.yaml   # Example deployment for smaller model
-│   ├── deployment-qwen-30b.yaml  # Example deployment for larger MOE model
-│   ├── fake-secret.yaml          # Fake secret for OpenShift Lightspeed
-│   ├── service.yaml              # Example service for Ramalama OpenAI compatible API
-│   └── olsconfig.yaml            # Example configuration for OpenShift Lightspeed
-│
-├── scripts/                  # Build and runtime scripts
-│   ├── build-script.sh       # Core script to install dependencies and build llama.cpp
-│   └── llama-server.sh       # Script to start the llama.cpp server
-├── LICENSE                   # Project license
-└── README.md                 # This file
-```
 
-## Building Images Locally with Podman
+- **Declarative Deployments** - Everything as code with Kustomize
+- **Auto-scaling** - Horizontal pod autoscaling based on demand  
+- **Security First** - Pod security standards and RBAC
+- **Monitoring Ready** - Prometheus metrics and health checks
 
-Tested on & recommended to use Podman 5 or newer.
+### 🎭 **Multiple Model Support**
 
-### 1. Build the Base Image (`centos-ramalama-min`)
+| Model | Size | Use Case | Status |
+|-------|------|----------|---------|
+| **Qwen 3 1.7B** | Small | 💬 Chat, Q&A | ✅ Ready |
+| **Qwen 3 4B** | Medium | 💼 Business tasks | ✅ Ready |  
+| **Qwen 3 30B** | Large | 🧠 Complex reasoning | ✅ Ready |
+| **DeepSeek R1** | 8B | 🔬 Research tasks | ✅ Ready |
 
-This image contains all the necessary dependencies and the compiled `llama.cpp` binaries.
+### **Developer Experience**
+
+- **Quick Setup** - One command deployment
+- **Easy Configuration** - YAML-based model definitions
+- **API Compatible** - OpenAI-compatible endpoints
+- **Auto-discovery** - Automatic service discovery for OpenShift Lightspeed
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+![Kubernetes](https://img.shields.io/badge/Kubernetes-1.24+-blue?logo=kubernetes)
+![OpenShift](https://img.shields.io/badge/OpenShift-4.15+-red?logo=redhatopenshift)
+![Podman](https://img.shields.io/badge/Podman-4.0+-purple?logo=podman)
+
+- **Kubernetes/OpenShift cluster** with admin access
+- **Container runtime** (Podman recommended, Docker works if you insist)
+- **kubectl/oc CLI** configured
+
+### 1️⃣ Clone and Explore
 
 ```bash
-# Navigate to the repository root
-cd /this/repo
-
-# Define your desired image name
-export IMAGE_OWNER="your-registry/username" # e.g., your repo/username like "ghcr.io/myuser" or "quay.io/user"
-export BASE_IMAGE_TAG="${IMAGE_OWNER}/centos-ramalama-min:latest"
-
-podman build \
-  -f containerfiles/Containerfile-min \
-  -t "${BASE_IMAGE_TAG}" \
-  .
+git clone https://github.com/kush-gupt/ramalama-k8s.git
+cd ramalama-k8s
 ```
-> [!NOTE]  
-> Replace `your-registry/username` with your actual username or organization for the registry you intend to use (e.g., `ghcr.io/myuser`, `quay.io/myorg`).
 
-### 2. Build an Application Image (e.g., Qwen-4B)
+### 2️⃣ Deploy Your First Model
 
-Use Ramalama to create a raw OCI image first:
+#### **Single Model (Recommended)**
 ```bash
-# Install Ramalama by script (see https://ramalama.ai for more details)
-curl -fsSL https://ramalama.ai/install.sh | bash
-...
+# 🏗️ Create namespace
+oc apply -f k8s/models/ramalama-namespace.yaml
 
-# Pull a model of your choice, for Qwen-4B:
-ramalama pull hf://unsloth/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf
+# 🚀 Deploy Qwen 3 1B model on CPU 
+oc apply -k k8s/models/qwen3-1b
 
-# Make this image your model source in the next stages:
-export MODEL_SOURCE_NAME='${IMAGE_OWNER}/qwen3-4b:latest'
-
-# Toss that model into an OCI image:
-ramalama convert hf://unsloth/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf oci://${MODEL_SOURCE_NAME}
-
-# Push to your registry:
-podman push ${MODEL_SOURCE_NAME}
+# ✅ Verify deployment
+oc get pods -l model=qwen3-4b -n ramalama
 ```
 
-Modelcar images take the centos base image and copy the model into it from the OCI object created above.
+#### **Environment-Based Deployment**
+```bash
+# 🧪 Development environment
+oc apply -k k8s/overlays/dev
 
-To build the Qwen-4B image:
+# 🏭 Production environment  
+oc apply -k k8s/overlays/production
+```
+
+### 3️⃣ Test Your Model
 
 ```bash
-# Ensure BASE_IMAGE_TAG is set from the previous step
-export APP_IMAGE_TAG="${IMAGE_OWNER}/qwen-4b-ramalama:latest"
+# 🔗 Port forward to access the API
+oc port-forward -n ramalama svc/qwen3-4b-ramalama-service 8080:8080
 
-podman build \
-  -f containerfiles/Containerfile-qwen-4b \
-  --build-arg BASE_IMAGE_NAME="${BASE_IMAGE_TAG}" \
-  --build-arg MODEL_SOURCE_NAME="${MODEL_SOURCE_NAME}" \
-  -t "${APP_IMAGE_TAG}" \
-  .
+# 💬 Test the chat API
+curl -X POST http://localhost:8080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen3-4b-model",
+    "messages": [{"role": "user", "content": "Hello! How are you?"}],
+    "temperature": 0.7
+  }'
 ```
 
-To build the Qwen-30B image:
+## 🎛️ **OpenShift Lightspeed Integration**
+
+![OpenShift Lightspeed](https://img.shields.io/badge/OpenShift%20Lightspeed-Ready-brightgreen?logo=redhatopenshift)
+
+Turn your deployed models into an AI-powered OpenShift assistant!
+
+### 📋 **Prerequisites**
 ```bash
-export APP_IMAGE_QWEN_30B_TAG="${IMAGE_OWNER}/qwen-30b-ramalama:latest"
+# ✅ Ensure you have at least one model running first
+oc get pods -l app.kubernetes.io/name=ramalama -n ramalama
 
-podman build \
-  -f containerfiles/Containerfile-qwen-30b \
-  --build-arg BASE_IMAGE_NAME="${BASE_IMAGE_TAG}" \
-  --build-arg MODEL_SOURCE_NAME="${MODEL_SOURCE_NAME}" \ # quay.io/kugupta/qwen3-30b as an example
-  -t "${APP_IMAGE_QWEN_30B_TAG}" \
-  .
+# 🚀 If no project or models are deployed, deploy one first:
+oc apply -f k8s/models/ramalama-namespace.yaml
+oc apply -k k8s/models/qwen3-4b
 ```
-## Running the Server
 
-Once an application image is built (e.g., `your-registry-username/qwen-4b-ramalama:latest`), you can run the server.
+### 🎯 **Deployment Options**
 
-Example:
+#### **Option 1: GitOps Deployment (Recommended)**
 ```bash
-podman run -it --rm -p 8080:8080 \
-  ${APP_IMAGE_TAG} \
-  llama-server.sh \
-  --port 8080 \
-  --model /models/Qwen3-4B-Q4_K_M.gguf/Qwen3-4B-Q4_K_M.gguf \
-  --no-warmup --jinja --log-colors \
-  --alias qwen-model \
-  --ctx-size 20048 --cache-reuse 256 -ngl -1 --threads 14 \
-  --temp 0.6 --top-k 20 --top-p 0.95 --min-p 0 \
-  --host 0.0.0.0
+# 🔥 Deploy with ArgoCD - single command handles timing automatically
+oc apply -f k8s/lightspeed/argocd/application-qwen3-4b.yaml
+
+# ✅ Monitor deployment
+oc get applications -n openshift-gitops | grep lightspeed
 ```
-## Kubernetes Deployment
 
-Example Kubernetes manifests are provided in the `k8s/` directory. These can be used as a starting point for deploying the Ramalama server to a Kubernetes cluster. You will likely need to customize them, especially regarding image names, resource requests/limits, threads, and any necessary secrets and/or configmaps. The `olsconfig.yaml` may be used by OpenShift Lightspeed for its configuration, and models are expected to be in the `/models` directory within the container.
+#### **Option 2: Direct Kustomize (Two-Step Process)**
+Due to operator timing dependencies, direct deployment requires two steps:
 
-## GitHub Actions CI Pipeline
+```bash
+# 🔧 Step 1: Install operator and create CRDs
+oc apply -k k8s/lightspeed/base/operator-only
 
-This repository includes a GitHub Actions workflow defined in `.github/workflows/build-images.yml`. This pipeline automates the building and pushing of container images.
+# ⏳ Step 2: Wait for operator to be ready (this creates the required CRDs)
+oc wait --for=condition=Ready pod -l app.kubernetes.io/name=lightspeed-operator -n openshift-lightspeed --timeout=300s
 
-**Features:**
+# 🎯 Step 3: Apply complete configuration
+oc apply -k k8s/lightspeed/overlays/qwen3-4b
+```
 
-*   **Trigger**: Runs on pushes to the `main` branch and on pull requests targeting `main`.
-*   **Podman**: Uses Podman for all build operations.
-*   **Build Order**:
-    1.  Builds the base image (`centos-ramalama-min`).
-    2.  Builds the application images (`centos-ramalama-qwen-4b`, `centos-ramalama-qwen-30b`) using the just-built base image.
-*   **Registry**: Pushes images to GitHub Container Registry (GHCR) by default when changes are merged to `main`.
-    *   Images will be named like `ghcr.io/<your-github-username>/centos-ramalama-min:latest`.
-*   **Tagging**: Images are tagged with `latest` and the Git commit SHA.
+### **What You Get**
+- **AI Assistant** integrated into OpenShift console
+- **YAML Generation** - "Create a deployment for nginx"  
+- **Troubleshooting** - "Why is my pod failing?"
+- **Best Practices** - Expert OpenShift guidance
+- **Auto-discovery** - Automatically connects to your deployed models
 
-**Configuring Registry for Pushing (for forks or different registries):**
+### **Verification**
+```bash
+# ✅ Check all components are running
+oc get pods -n openshift-lightspeed
+oc get olsconfig cluster -n openshift-lightspeed
+```
 
-If you fork this repository or want to push to a different registry (e.g., your Quay.io account):
+[📖 **Detailed Lightspeed Setup Guide**](k8s/lightspeed/README.md)
 
-1.  **Secrets**:
-    *   For GHCR (default): The workflow uses `secrets.GITHUB_TOKEN` which is automatically available and has permissions to push to your fork's GHCR if packages are enabled for the repository.
-    *   For other registries (e.g., Quay.io, Docker Hub):
-        *   You'll need to create repository secrets (e.g., `REGISTRY_USER`, `REGISTRY_TOKEN`).
-        *   Update the `podman login` step in `.github/workflows/build-images.yml` to use these secrets and the correct registry URL.
-2.  **Environment Variables in Workflow**:
-    *   You can change the `REGISTRY` and `IMAGE_OWNER` environment variables at the top of the `.github/workflows/build-images.yml` file if you want to push to a different registry or under a different owner name by default. The `IMAGE_OWNER` defaults to `github.repository_owner`.
+## 🏗️ **Architecture Overview**
 
-## Multi-Architecture Images
+```mermaid
+graph TB
+    subgraph "🚀 GitOps Layer"
+        G[📝 Git Repository]
+        A[🔄 ArgoCD/OpenShift GitOps]
+    end
+    
+    subgraph "☸️ Kubernetes Cluster"
+        subgraph "🤖 ramalama namespace"
+            M1[📦 qwen3-1b-deployment]
+            M2[📦 qwen3-4b-deployment] 
+            M3[📦 qwen3-30b-deployment]
+            M4[📦 deepseek-r1-deployment]
+        end
+        
+        subgraph "🎯 openshift-lightspeed namespace"
+            LS[🤖 Lightspeed Assistant]
+        end
+    end
+    
+    subgraph "👨‍💻 User Interfaces"
+        CLI[🖥️ kubectl/oc CLI]
+        WEB[🌐 OpenShift Console]
+        API[🔌 REST APIs]
+    end
+    
+    G --> A
+    A --> M1
+    A --> M2  
+    A --> M3
+    A --> M4
+    A --> LS
+    
+    LS -.->|🔗 Connects to| M2
+    LS -.->|🔗 Connects to| M3
+    LS -.->|🔗 Connects to| M4
+    
+    CLI --> M1
+    CLI --> M2
+    WEB --> LS
+    API --> M1
+    API --> M2
+    
+    style G fill:#e1f5fe
+    style A fill:#f3e5f5
+    style M1 fill:#e8f5e8
+    style M2 fill:#e8f5e8
+    style M3 fill:#e8f5e8  
+    style M4 fill:#e8f5e8
+    style LS fill:#fff3e0
+```
 
-While the current CI pipeline builds for single-architecture (amd64), the `build-script.sh` has multi-arch awareness.
-To build multi-arch images:
-1. Build images for each architecture (e.g., `amd64`, `arm64`) separately using `podman build --arch=<architecture> ...`.
-2. Create a manifest list and push it:
-   ```bash
-   podman manifest create my-multiarch-image:latest
-   podman manifest add my-multiarch-image:latest your-registry/image:amd64-tag
-   podman manifest add my-multiarch-image:latest your-registry/image:arm64-tag
-   podman manifest push my-multiarch-image:latest your-registry/my-multiarch-image:latest
-   ```
-ARM containers are not yet automated in the CI pipeline, they're done manually by Kush and hosted under https://quay.io/kugupta.
+## **Model Management**
 
-Let Kush know if you'd like to see specific images or models in this repo!
+### **Add New Models**
 
-Follow the original model licensing closely, I take no responsibility for any things you do with the content described here!
+![Add Model](https://img.shields.io/badge/Script-add--model.sh-blue?logo=gnu-bash)
+
+```bash
+# 🎯 Interactive mode
+./scripts/add-model.sh --interactive
+
+# 🚀 Command line mode with Lightspeed generation
+./scripts/add-model.sh \
+  --name "llama-7b" \
+  --description "Llama 7B Chat model" \
+  --model-gguf-url "hf://microsoft/Llama-7b-gguf" \
+  --model-file "/mnt/models/llama-7b.gguf/llama-7b.gguf" \
+  --create-lightspeed-overlay
+```
+
+**Auto-Generated Files:**
+- 📦 `containerfiles/Containerfile-llama-7b`
+- ☸️ `k8s/models/llama-7b/kustomization.yaml`
+- 🎯 `k8s/lightspeed/overlays/llama-7b/kustomization.yaml`
+- 🤖 `k8s/lightspeed/overlays/llama-7b/olsconfig.yaml`
+- 📖 `k8s/lightspeed/overlays/llama-7b/README.md`
+- ⚙️ `models/llama-7b.conf`
+
+### **List Models**
+```bash
+./scripts/list-models.sh
+```
+
+### **Remove Models**
+```bash
+./scripts/remove-model.sh llama-7b --force
+```
+
+### **Deployment Order (Important!)**
+
+When deploying both models and OpenShift Lightspeed:
+
+```bash
+# 1️⃣ Deploy model first
+oc apply -f k8s/models/ramalama-namespace.yaml
+oc apply -k k8s/models/llama-7b
+
+# 2️⃣ Wait for model to be ready
+oc wait --for=condition=Ready pod -l model=llama-7b -n ramalama --timeout=300s
+
+# 3️⃣ Then deploy Lightspeed (two-step process)
+oc apply -k k8s/lightspeed/base/operator-only
+oc wait --for=condition=Ready pod -l app.kubernetes.io/name=lightspeed-operator -n openshift-lightspeed --timeout=100s
+oc apply -k k8s/lightspeed/overlays/llama-7b
+```
+
+> [!IMPORTANT]  
+> **Model First, Then Lightspeed**: Always deploy your models before deploying OpenShift Lightspeed to ensure proper service discovery and connectivity.
+
+## **Production-like Deployment**
+
+### **With OpenShift GitOps**
+
+![GitOps](https://img.shields.io/badge/GitOps-Enabled-green?logo=argo)
+
+```bash
+# 🔄 Single model application
+oc apply -f k8s/argocd/application-example.yaml
+
+# 🌍 Multi-environment ApplicationSet
+oc apply -f k8s/argocd/applicationset-example.yaml
+```
+
+### 📊 **Resource Requirements**
+
+| Model Size | Memory | CPU | GPU | Storage |
+|------------|--------|-----|-----|---------|
+| **1.7B** | 4Gi | 2 cores | Optional | 10Gi |
+| **4B** | 8Gi | 4 cores | Optional | 20Gi |
+| **8B** | 16Gi | 8 cores | Recommended | 40Gi |
+| **30B** | 32Gi | 16 cores | Required | 80Gi |
+
+### 🔐 **Security Features**
+
+- **Pod Security Standards** - Restricted policies enforced
+- **Non-root execution** - All containers run as non-root user
+- **RBAC** - Role-based access control
+- **Network Policies** - Micro-segmentation ready
+- **Security Context** - Dropped capabilities and seccomp
+
+## 📁 **Project Structure**
+
+```
+ramalama-k8s/
+├── 📦 containerfiles/           # Container build definitions
+├── ☸️ k8s/                      # Kubernetes manifests
+│   ├── 🏗️ base/                 # Base Kustomize resources  
+│   ├── 🎭 models/               # Model-specific configs
+│   ├── 🌍 overlays/             # Environment overlays
+│   ├── 🎯 lightspeed/           # OpenShift Lightspeed integration
+│   └── 🔄 argocd/               # GitOps applications
+├── 🤖 models/                   # Model configurations
+├── 🛠️ scripts/                  # Management scripts
+└── 📚 docs/                     # Documentation
+```
+
+## **Configuration**
+
+### **Model Parameters**
+```yaml
+# Example model configuration
+configMapGenerator:
+- name: ramalama-config
+  literals:
+  - CTX_SIZE=20048        # 🧠 Context window size
+  - THREADS=14            # 🔄 CPU threads
+  - TEMP=0.7              # 🌡️ Temperature (creativity)
+  - TOP_K=40              # 🎯 Top-K sampling
+  - TOP_P=0.9             # 📊 Top-P sampling
+```
+
+### **Environment Variables**
+```bash
+# 🚪 API Configuration
+PORT=8080
+HOST=0.0.0.0
+
+# 🧠 Model Settings  
+MODEL_FILE=/mnt/models/model.gguf
+CTX_SIZE=4096
+THREADS=14
+
+# �� Server Options
+LOG_COLORS=true
+NO_WARMUP=false
+JINJA=true
+```
+
+## **Monitoring & Troubleshooting**
+
+### **Health Checks**
+```bash
+# ✅ Check model health
+oc get pods -l app.kubernetes.io/name=ramalama -n ramalama
+
+# 📝 View logs
+oc logs -l model=qwen3-4b -n ramalama --tail=100
+
+# 🔧 Debug service connectivity
+oc port-forward -n ramalama svc/qwen3-4b-ramalama-service 8080:8080
+curl http://localhost:8080/v1/models
+```
+
+### 🆘 **Common Issues**
+
+| Issue | Solution |
+|-------|----------|
+| 🚫 Pod not starting | Check resource limits and node capacity |
+| 🔌 API not responding | Verify port-forward and service endpoints |  
+| 🐌 Slow responses | Increase CPU/memory or enable GPU |
+| 📦 Image pull errors | Check registry credentials and image tags |
+
+## 🤝 **Contributing**
+
+![Contributors](https://img.shields.io/badge/Contributors-Welcome-brightgreen?logo=github)
+
+1. **🍴 Fork** the repository
+2. **🌿 Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **💾 Commit** your changes (`git commit -m 'Add amazing feature'`)
+4. **📤 Push** to the branch (`git push origin feature/amazing-feature`)
+5. **🔄 Open** a Pull Request
+
+### **Development Setup**
+```bash
+# 🏠 Local development
+./scripts/build-script.sh
+podman build -f containerfiles/Containerfile-min .
+
+# 🧪 Test locally
+./scripts/llama-server.sh
+```
+
+## 📚 **Documentation**
+
+- **[Kubernetes Deployment Guide](k8s/README.md)**
+- **[OpenShift Lightspeed Integration](k8s/lightspeed/README.md)**  
+- **[Model Management](MODELS.md)**
+- **[GitOps Setup](OPENSHIFT_GITOPS.md)**
+
+## 📜 **License**
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙋 **Support**
+
+- **🐛 Issues**: [GitHub Issues](https://github.com/kush-gupt/ramalama-k8s/issues)
+- **💬 Discussions**: [GitHub Discussions](https://github.com/kush-gupt/ramalama-k8s/discussions)
+---
+
+**🎉 Ready to deploy your own AI models?**
+
+[![Get Started](https://img.shields.io/badge/Get%20Started-Now-success?style=for-the-badge&logo=rocket)](k8s/README.md)
+[![OpenShift Lightspeed](https://img.shields.io/badge/OpenShift%20Lightspeed-Deploy-red?style=for-the-badge&logo=redhatopenshift)](k8s/lightspeed/README.md)
+
+*Made for the open source community*

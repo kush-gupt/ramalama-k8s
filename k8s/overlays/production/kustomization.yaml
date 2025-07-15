@@ -1,0 +1,61 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: ramalama-production
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+
+namespace: ramalama
+
+resources:
+  - ../../base
+  - ../../models/base-model/deployment.yaml
+  - namespace.yaml
+
+labels:
+  - includeSelectors: true
+    pairs:
+      environment: production
+      version: stable
+
+commonAnnotations:
+  argocd.argoproj.io/sync-options: CreateNamespace=true
+
+# Production-specific configuration
+configMapGenerator:
+  - name: ramalama-config
+    behavior: merge
+    literals:
+      - LOG_LEVEL=info
+      - THREADS=16
+      - CTX_SIZE=8192
+      - CACHE_REUSE=512
+  - name: model-config
+    behavior: replace
+    literals:
+      - MODEL_NAME=production-model
+      - MODEL_FILE=/mnt/models/model.file
+      - ALIAS=production-model
+
+# Apply base security and health check patches first
+patches:
+  - path: ../../models/base-model/deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: ramalama-deployment
+  # Then apply production resource limits
+  - path: resources-patch.yaml
+    target:
+      kind: Deployment
+      name: ramalama-deployment
+
+# Production-specific image tags
+images:
+  - name: MODEL_IMAGE
+    newName: ghcr.io/kush-gupt/centos-ramalama-min
+    newTag: latest
+
+replicas:
+  - name: ramalama-deployment
+    count: 1

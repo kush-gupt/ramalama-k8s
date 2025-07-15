@@ -1,0 +1,41 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: openshift-lightspeed-operator
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+
+resources:
+  - namespace.yaml
+  - subscription.yaml
+  - credentials-secret.yaml
+
+# Use targeted patches to add labels without affecting immutable fields
+patches:
+  - target:
+      kind: Subscription
+      name: lightspeed-operator
+    patch: |-
+      - op: add
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: openshift-lightspeed
+      - op: add
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: ramalama-k8s
+      - op: add
+        path: /metadata/annotations/argocd.argoproj.io~1managed
+        value: "true"
+  - target:
+      kind: Secret
+      name: credentials
+    patch: |-
+      - op: add
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: openshift-lightspeed
+      - op: add
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: ramalama-k8s
+      - op: add
+        path: /metadata/annotations/argocd.argoproj.io~1managed
+        value: "true" 

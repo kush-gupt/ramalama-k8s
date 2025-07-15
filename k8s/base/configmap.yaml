@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ramalama-config
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+data:
+  # Common server configuration
+  PORT: "8080"
+  HOST: "0.0.0.0"
+  
+  # LLM server parameters
+  CTX_SIZE: "4096"
+  THREADS: "14"
+  TEMP: "0.7"
+  TOP_K: "40"
+  TOP_P: "0.9"
+  CACHE_REUSE: "256"
+  
+  # Server flags
+  NO_WARMUP: "true"
+  JINJA: "true"
+  LOG_COLORS: "true"
+  NGL: "-1"
+  MIN_P: "0" 

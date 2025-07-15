@@ -1,4 +1,4 @@
-name: Build Container Images
+name: Build Container Images (Modular)
 
 on:
   push:
@@ -8,14 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  # IMAGE_OWNER will default to github.repository_owner (lowercased).
-  # Example: if repo is MyOrg/my-repo, images will be ghcr.io/myorg/centos-ramalama-min
-  # Override IMAGE_OWNER if you want to push to a different org or user account.
-  # e.g., IMAGE_OWNER: your-quay-username
-
   BASE_IMAGE_NAME_SUFFIX: centos-ramalama-min
-  APP_IMAGE_QWEN_4B_NAME_SUFFIX: qwen-4b-ramalama
-  APP_IMAGE_QWEN_30B_NAME_SUFFIX: qwen-30b-ramalama
 
 jobs:
   determine-image-owner:
@@ -32,61 +25,208 @@ jobs:
           echo "OWNER=$OWNER" >> $GITHUB_OUTPUT
           echo "REGISTRY_OWNER_PATH=${{ env.REGISTRY }}/$OWNER" >> $GITHUB_OUTPUT
 
+  discover-models:
+    name: Discover Models
+    runs-on: ubuntu-latest
+    outputs:
+      models: ${{ steps.get_models.outputs.models }}
+      has_models: ${{ steps.get_models.outputs.has_models }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-yaml
+
+      - name: Discover models from configuration
+        id: get_models
+        run: |
+          # Create a script to extract models from YAML
+          cat > extract_models.py << 'EOF'
+          import yaml
+          import json
+          import sys
+          import os
+          
+          def sanitize_name(name):
+              import re
+              return re.sub(r'[^a-z0-9-]', '-', name.lower()).strip('-')
+          
+          def main():
+              config_file = 'models/models.yaml'
+              if not os.path.exists(config_file):
+                  print("No models.yaml found, using filesystem discovery")
+                  # Fallback: discover from containerfiles
+                  models = []
+                  containerfiles_dir = 'containerfiles'
+                  if os.path.exists(containerfiles_dir):
+                      for file in os.listdir(containerfiles_dir):
+                          if file.startswith('Containerfile-') and not file.endswith('-min'):
+                              model_name = file.replace('Containerfile-', '')
+                              models.append({
+                                  'key': model_name,
+                                  'name': model_name.replace('-', ' ').title(),
+                                  'model_source': 'quay.io/kugupta/unknown:latest',
+                                  'containerfile': file
+                              })
+                  
+                  output = {
+                      'include': models
+                  }
+                  print(json.dumps(output))
+                  print(f"has_models={'true' if models else 'false'}")
+                  return
+              
+              with open(config_file, 'r') as f:
+                  config = yaml.safe_load(f)
+              
+              if 'models' not in config or not config['models']:
+                  print('{"include": []}')
+                  print("has_models=false")
+                  return
+              
+              models = []
+              for model_key, model_config in config['models'].items():
+                  model_name_safe = sanitize_name(model_key)
+                  models.append({
+                      'key': model_key,
+                      'name': model_config.get('name', model_key),
+                      'name_safe': model_name_safe,
+                      'model_source': model_config.get('model_source', 'unknown'),
+                      'model_gguf_url': model_config.get('model_gguf_url', 'unknown'),
+                      'containerfile': f'Containerfile-{model_name_safe}'
+                  })
+              
+              output = {
+                  'include': models
+              }
+              print(json.dumps(output))
+              print(f"has_models={'true' if models else 'false'}")
+          
+          if __name__ == '__main__':
+              main()
+          EOF
+          
+          # Run the script and capture output
+          python3 extract_models.py > models_output.txt 2>&1
+          
+          # Extract the JSON and has_models flag
+          MODELS_JSON=$(head -n 1 models_output.txt)
+          HAS_MODELS=$(tail -n 1 models_output.txt | grep "has_models=" | cut -d'=' -f2)
+          
+          echo "models=$MODELS_JSON" >> $GITHUB_OUTPUT
+          echo "has_models=${HAS_MODELS:-false}" >> $GITHUB_OUTPUT
+          
+          echo "Discovered models:"
+          echo "$MODELS_JSON" | python3 -m json.tool || echo "Invalid JSON: $MODELS_JSON"
+
   build-base-image:
-    name: Build Base Image (centos-ramalama-min)
+    name: Build Base Image
     runs-on: ubuntu-latest
     needs: determine-image-owner
     permissions:
       contents: read
-      packages: write # Required to publish images to GitHub Packages
+      packages: write
+    outputs:
+      base_image_tag: ${{ steps.image_tags.outputs.TAG_LATEST }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Turn off IPv6
+      - name: Setup environment
         run: |
           sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
           sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
 
+      - name: Optimize Disk Space
+        uses: hugoalh/disk-space-optimizer-ghaction@v0.8.0
+        with:
+          operate_sudo: "True"
+          general_include: ".+"
+          docker_include: ".+"
+          docker_prune: "True"
+          docker_clean: "True"
+          apt_prune: "True"
+          apt_clean: "True"
+          homebrew_prune: "True"
+          homebrew_clean: "True"
+          npm_prune: "True"
+          npm_clean: "True"
+          os_swap: "True"
+
       - name: Upgrade to Podman 5
         run: |
-          # Enable universe repository which contains podman
           sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu oracular universe"
-          # Update package lists
           sudo apt-get update
           sudo apt-get purge firefox
-          # Install specific podman version
           sudo apt-get upgrade
 
-      - name: Print Disk Space
-        shell: bash
+      - name: Configure user namespaces for rootless podman
         run: |
+          # Ensure subuid/subgid entries exist for the current user (GitHub Actions compatibility)
+          RUNNER_UID=$(id -u)
+          RUNNER_USER=$(id -un)
+          
+          # Check if entries already exist
+          if ! grep -q "^$RUNNER_USER:" /etc/subuid; then
+            echo "$RUNNER_USER:100000:65536" | sudo tee -a /etc/subuid
+          fi
+          
+          if ! grep -q "^$RUNNER_USER:" /etc/subgid; then
+            echo "$RUNNER_USER:100000:65536" | sudo tee -a /etc/subgid
+          fi
+          
+          # Display current configuration
+          echo "Current subuid entries:"
+          grep "$RUNNER_USER" /etc/subuid || echo "No subuid entries found"
+          echo "Current subgid entries:"
+          grep "$RUNNER_USER" /etc/subgid || echo "No subgid entries found"
+
+      - name: Configure Podman storage
+        run: |
+          # Create storage directories on /mnt which has more space
+          sudo mkdir -p /mnt/podman /mnt/tmp /mnt/containers
+          
+          # Determine the actual user ID (GitHub Actions runners often use 1001)
+          RUNNER_UID=$(id -u)
+          RUNNER_GID=$(id -g)
+          echo "Configuring for user ID: $RUNNER_UID, group ID: $RUNNER_GID"
+          
+          # Set ownership to current user for rootless podman
+          sudo chown -R $RUNNER_UID:$RUNNER_GID /mnt/podman /mnt/tmp /mnt/containers
+          sudo chmod -R u+rwx,g+rx /mnt/podman /mnt/tmp /mnt/containers
+          
+          # Ensure HOME directory is writable (important for GitHub Actions)
+          sudo chown -R $RUNNER_UID:$RUNNER_GID $HOME || true
+          
+          # Create user containers directory for rootless podman
+          mkdir -p ~/.config/containers
+          
+          # Configure Podman storage for rootless operation
+          # Use all available free space without size limits
+          tee ~/.config/containers/storage.conf << 'EOF'
+          [storage]
+          driver = "overlay"
+          graphroot = "/mnt/podman"
+          runroot = "/mnt/containers"
+          
+          [storage.options]
+          mount_program = "/usr/bin/fuse-overlayfs"
+          EOF
+          
+          # Set environment variables for temporary directories
+          echo "TMPDIR=/mnt/tmp" >> $GITHUB_ENV
+          echo "TMP=/mnt/tmp" >> $GITHUB_ENV
+          echo "TEMP=/mnt/tmp" >> $GITHUB_ENV
+          
+          # Show available space
           df -h
+          echo "Podman storage configuration complete"
 
-      - name: Free Disk Space
-        shell: bash
-        run: |
-          sudo docker rmi "$(docker image ls -aq)" >/dev/null 2>&1 || true
-          sudo rm -rf \
-            /usr/share/dotnet /usr/local/lib/android /opt/ghc \
-            /usr/local/share/powershell /usr/share/swift /usr/local/.ghcup \
-            /usr/share/dotnet /usr/lib/jvm /opt/hostedtoolcache/CodeQL \
-            "$AGENT_TOOLSDIRECTORY" || true
-          sudo swapoff -a
-          sudo rm -f /mnt/Swapfile
-
-      # /mnt has ~ 65 GB free disk space. / is too small.
-      - name: Reconfigure data-root
-        run: |
-          sudo mkdir -p /mnt/docker /etc/docker
-          echo '{"data-root": "/mnt/docker"}' > /tmp/daemon.json
-          sudo mv /tmp/daemon.json /etc/docker/daemon.json
-          cat /etc/docker/daemon.json
-          sudo systemctl restart docker.service
-          df -h
-
-      - name: Log in to GitHub Container Registry
+      - name: Log in to Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
       - name: Define Image Tags
@@ -98,192 +238,648 @@ jobs:
           TAG_SHA="${OWNER_PATH}/${IMAGE_BASENAME}:${{ github.sha }}"
           echo "TAG_LATEST=${TAG_LATEST}" >> $GITHUB_OUTPUT
           echo "TAG_SHA=${TAG_SHA}" >> $GITHUB_OUTPUT
-          echo "All tags to build: ${TAG_LATEST}, ${TAG_SHA}"
 
-      - name: Build base image
+      - name: Build Base Image
         run: |
-          podman --storage-driver overlay build --squash-all \
+          # Set temporary directory environment variables for this step
+          export TMPDIR=/mnt/tmp
+          export TMP=/mnt/tmp
+          export TEMP=/mnt/tmp
+          
+          podman build --squash-all \
             --format=oci \
             --tag ${{ steps.image_tags.outputs.TAG_LATEST }} \
             --tag ${{ steps.image_tags.outputs.TAG_SHA }} \
             -f ./containerfiles/Containerfile-min \
             .
 
-      - name: Push base image
-        run: |
-          podman --storage-driver overlay push ${{ steps.image_tags.outputs.TAG_LATEST }}
-          podman --storage-driver overlay push ${{ steps.image_tags.outputs.TAG_SHA }}
+      - name: Push Base Image (with retry)
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: |
+            export TMPDIR=/mnt/tmp
+            export TMP=/mnt/tmp
+            export TEMP=/mnt/tmp
+            podman push ${{ steps.image_tags.outputs.TAG_LATEST }}
+            podman push ${{ steps.image_tags.outputs.TAG_SHA }}
 
-  build-app-image-qwen-4b:
-    name: Build App Image (Qwen 4B)
+  build-source-images:
+    name: Build Source Images
     runs-on: ubuntu-latest
-    needs: [determine-image-owner, build-base-image]
+    needs: [determine-image-owner, discover-models]
+    if: needs.discover-models.outputs.has_models == 'true'
+    continue-on-error: true
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover-models.outputs.models) }}
+    outputs:
+      success: ${{ steps.set-success.outputs.success }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup environment
+        run: |
+          sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
+          sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
+
+      - name: Optimize Disk Space
+        uses: hugoalh/disk-space-optimizer-ghaction@v0.8.0
+        with:
+          operate_sudo: "True"
+          general_include: ".+"
+          docker_include: ".+"
+          docker_prune: "True"
+          docker_clean: "True"
+          apt_prune: "True"
+          apt_clean: "True"
+          homebrew_prune: "True"
+          homebrew_clean: "True"
+          npm_prune: "True"
+          npm_clean: "True"
+          os_swap: "True"
+
+      - name: Upgrade to Podman 5
+        run: |
+          sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu oracular universe"
+          sudo apt-get update
+          sudo apt-get purge firefox
+          sudo apt-get upgrade
+
+      - name: Configure user namespaces for rootless podman
+        run: |
+          # Ensure subuid/subgid entries exist for the current user (GitHub Actions compatibility)
+          RUNNER_UID=$(id -u)
+          RUNNER_USER=$(id -un)
+          
+          # Check if entries already exist
+          if ! grep -q "^$RUNNER_USER:" /etc/subuid; then
+            echo "$RUNNER_USER:100000:65536" | sudo tee -a /etc/subuid
+          fi
+          
+          if ! grep -q "^$RUNNER_USER:" /etc/subgid; then
+            echo "$RUNNER_USER:100000:65536" | sudo tee -a /etc/subgid
+          fi
+          
+          # Display current configuration
+          echo "Current subuid entries:"
+          grep "$RUNNER_USER" /etc/subuid || echo "No subuid entries found"
+          echo "Current subgid entries:"
+          grep "$RUNNER_USER" /etc/subgid || echo "No subgid entries found"
+
+      - name: Pre-create cache directories
+        run: |
+          # Create storage directories before cache restoration to avoid permission issues
+          sudo mkdir -p /mnt/podman/storage /mnt/podman/containers /mnt/tmp
+          
+          # Determine the actual user ID (GitHub Actions runners often use 1001)
+          RUNNER_UID=$(id -u)
+          RUNNER_GID=$(id -g)
+          echo "Pre-creating cache directories for user ID: $RUNNER_UID, group ID: $RUNNER_GID"
+          
+          # Set ownership to current user for cache restoration
+          sudo chown -R $RUNNER_UID:$RUNNER_GID /mnt/podman /mnt/tmp
+          sudo chmod -R u+rwx,g+rx /mnt/podman /mnt/tmp
+
+      - name: Cache model-specific Podman storage
+        uses: actions/cache@v4
+        id: cache-model-storage
+        with:
+          path: |
+            /mnt/podman/storage
+            /mnt/podman/containers
+            /mnt/tmp
+          key: model-storage-${{ matrix.key }}-${{ runner.os }}-${{ hashFiles('models/models.yaml', 'containerfiles/Containerfile-min') }}
+          restore-keys: |
+            model-storage-${{ matrix.key }}-${{ runner.os }}-
+            model-storage-${{ matrix.key }}-
+
+      - name: Cache status
+        run: |
+          echo "Cache hit: ${{ steps.cache-model-storage.outputs.cache-hit }}"
+          echo "Cache key: model-storage-${{ matrix.key }}-${{ runner.os }}-${{ hashFiles('models/models.yaml', 'containerfiles/Containerfile-min') }}"
+          if [[ "${{ steps.cache-model-storage.outputs.cache-hit }}" == "true" ]]; then
+            echo "✅ Using cached storage for model ${{ matrix.key }}"
+          else
+            echo "📦 Building fresh storage for model ${{ matrix.key }}"
+          fi
+
+      - name: Configure Podman storage
+        run: |
+          # Create storage directories on /mnt which has more space
+          sudo mkdir -p /mnt/podman /mnt/tmp /mnt/containers
+          
+          # Determine the actual user ID (GitHub Actions runners often use 1001)
+          RUNNER_UID=$(id -u)
+          RUNNER_GID=$(id -g)
+          echo "Configuring for user ID: $RUNNER_UID, group ID: $RUNNER_GID"
+          
+          # Set ownership to current user for rootless podman
+          sudo chown -R $RUNNER_UID:$RUNNER_GID /mnt/podman /mnt/tmp /mnt/containers
+          sudo chmod -R u+rwx,g+rx /mnt/podman /mnt/tmp /mnt/containers
+          
+          # Ensure HOME directory is writable (important for GitHub Actions)
+          sudo chown -R $RUNNER_UID:$RUNNER_GID $HOME || true
+          
+          # Create user containers directory for rootless podman
+          mkdir -p ~/.config/containers
+          
+          # Configure Podman storage for rootless operation
+          # Use all available free space without size limits
+          tee ~/.config/containers/storage.conf << 'EOF'
+          [storage]
+          driver = "overlay"
+          graphroot = "/mnt/podman"
+          runroot = "/mnt/containers"
+          
+          [storage.options]
+          mount_program = "/usr/bin/fuse-overlayfs"
+          EOF
+          
+          # Set environment variables for temporary directories
+          echo "TMPDIR=/mnt/tmp" >> $GITHUB_ENV
+          echo "TMP=/mnt/tmp" >> $GITHUB_ENV
+          echo "TEMP=/mnt/tmp" >> $GITHUB_ENV
+          
+          # Create ramalama storage directories on / (root filesystem - 59G available)
+          sudo mkdir -p /home/runner/ramalama/store /home/runner/cache /home/runner/config
+          sudo chown -R $RUNNER_UID:$RUNNER_GID /home/runner/ramalama /home/runner/cache /home/runner/config
+          
+          # Redirect XDG directories to / for ramalama storage (backup approach)
+          # Primary approach uses --store parameter in ramalama convert command
+          echo "XDG_DATA_HOME=/home/runner" >> $GITHUB_ENV
+          echo "XDG_CACHE_HOME=/home/runner/cache" >> $GITHUB_ENV
+          echo "XDG_CONFIG_HOME=/home/runner/config" >> $GITHUB_ENV
+          
+          # Show available space and cache info
+          df -h /mnt
+          echo "Cache hit: ${{ steps.cache-model-storage.outputs.cache-hit }}"
+          if [[ "${{ steps.cache-model-storage.outputs.cache-hit }}" == "true" ]]; then
+            echo "📦 Using cached Podman storage for model ${{ matrix.key }}"
+            ls -la /mnt/podman/ || echo "Podman storage directory empty"
+          else
+            echo "🔨 Fresh Podman storage for model ${{ matrix.key }}"
+          fi
+          echo "Podman storage configuration complete"
+
+      - name: Install Ramalama
+        run: |
+          # Create bin directory with proper permissions before installation
+          sudo mkdir -p /home/bin
+          sudo chown -R $(id -u):$(id -g) /home/bin
+          
+          # Add ramalama bin directory to PATH before installation
+          echo "/home/bin" >> $GITHUB_PATH
+          export PATH="/home/bin:$PATH"
+          
+          # Install ramalama
+          curl -fsSL https://ramalama.ai/install.sh | bash
+
+      - name: Check disk space before conversion
+        run: |
+          echo "Disk space before conversion:"
+          df -h
+          echo "Storage:"
+          echo "  - Ramalama store: /home/runner/ramalama/store (root filesystem - 59G available)"
+          echo "  - Ramalama binaries: /home/bin"
+          echo "  - Podman storage: /mnt/podman (mnt filesystem - 66G available)"
+          echo "  - Total available: ~125G across both filesystems"
+          echo "XDG directories configured as backup:"
+          echo "XDG_DATA_HOME=$XDG_DATA_HOME"
+          echo "XDG_CACHE_HOME=$XDG_CACHE_HOME"
+          echo "XDG_CONFIG_HOME=$XDG_CONFIG_HOME"
+
+      - name: Log in to Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+
+      - name: Build and push source image with Ramalama
+        run: |
+          OWNER_PATH="${{ needs.determine-image-owner.outputs.registry_owner_path }}"
+          MODEL_SOURCE_URL="${OWNER_PATH}/${{ matrix.model_source }}:latest"
+          
+          # Set temporary directory environment variables for this step
+          export TMPDIR=/mnt/tmp
+          export TMP=/mnt/tmp
+          export TEMP=/mnt/tmp
+          
+          # Run ramalama convert
+          ramalama --store /home/runner/ramalama/store convert ${{ matrix.model_gguf_url }} oci://${MODEL_SOURCE_URL}
+          
+          # Push the image that was created by ramalama
+          podman push ${MODEL_SOURCE_URL}
+          
+      - name: Set success flag
+        id: set-success
+        if: success()
+        run: echo "success=true" >> $GITHUB_OUTPUT
+        
+
+
+  build-model-images:
+    name: Build Model Images
+    runs-on: ubuntu-latest
+    needs: [determine-image-owner, discover-models, build-base-image, build-source-images]
+    if: always() && needs.discover-models.outputs.has_models == 'true' && needs.build-base-image.result == 'success'
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover-models.outputs.models) }}
+
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Turn off IPv6
+      - name: Setup environment
         run: |
           sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
           sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
 
+      - name: Optimize Disk Space
+        uses: hugoalh/disk-space-optimizer-ghaction@v0.8.0
+        with:
+          operate_sudo: "True"
+          general_include: ".+"
+          docker_include: ".+"
+          docker_prune: "True"
+          docker_clean: "True"
+          apt_prune: "True"
+          apt_clean: "True"
+          homebrew_prune: "True"
+          homebrew_clean: "True"
+          npm_prune: "True"
+          npm_clean: "True"
+          os_swap: "True"
+
       - name: Upgrade to Podman 5
         run: |
-          # Enable universe repository which contains podman
           sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu oracular universe"
-          # Update package lists
           sudo apt-get update
           sudo apt-get purge firefox
-          # Install specific podman version
           sudo apt-get upgrade
 
-      - name: Print Disk Space
-        shell: bash
+      - name: Configure user namespaces for rootless podman
         run: |
-          df -h
+          # Ensure subuid/subgid entries exist for the current user (GitHub Actions compatibility)
+          RUNNER_UID=$(id -u)
+          RUNNER_USER=$(id -un)
+          
+          # Check if entries already exist
+          if ! grep -q "^$RUNNER_USER:" /etc/subuid; then
+            echo "$RUNNER_USER:100000:65536" | sudo tee -a /etc/subuid
+          fi
+          
+          if ! grep -q "^$RUNNER_USER:" /etc/subgid; then
+            echo "$RUNNER_USER:100000:65536" | sudo tee -a /etc/subgid
+          fi
+          
+          # Display current configuration
+          echo "Current subuid entries:"
+          grep "$RUNNER_USER" /etc/subuid || echo "No subuid entries found"
+          echo "Current subgid entries:"
+          grep "$RUNNER_USER" /etc/subgid || echo "No subgid entries found"
 
-      - name: Free Disk Space
-        shell: bash
+      - name: Pre-create cache directories
         run: |
-          sudo docker rmi "$(docker image ls -aq)" >/dev/null 2>&1 || true
-          sudo rm -rf \
-            /usr/share/dotnet /usr/local/lib/android /opt/ghc \
-            /usr/local/share/powershell /usr/share/swift /usr/local/.ghcup \
-            /usr/share/dotnet /usr/lib/jvm /opt/hostedtoolcache/CodeQL \
-            "$AGENT_TOOLSDIRECTORY" || true
-          sudo swapoff -a
-          sudo rm -f /mnt/Swapfile
+          # Create storage directories before cache restoration to avoid permission issues
+          sudo mkdir -p /mnt/podman/storage /mnt/podman/containers /mnt/tmp
+          
+          # Determine the actual user ID (GitHub Actions runners often use 1001)
+          RUNNER_UID=$(id -u)
+          RUNNER_GID=$(id -g)
+          echo "Pre-creating cache directories for user ID: $RUNNER_UID, group ID: $RUNNER_GID"
+          
+          # Set ownership to current user for cache restoration
+          sudo chown -R $RUNNER_UID:$RUNNER_GID /mnt/podman /mnt/tmp
+          sudo chmod -R u+rwx,g+rx /mnt/podman /mnt/tmp
 
-      # /mnt has ~ 65 GB free disk space. / is too small.
-      - name: Reconfigure data-root
+      - name: Cache model-specific Podman storage
+        uses: actions/cache@v4
+        id: cache-model-storage
+        with:
+          path: |
+            /mnt/podman/storage
+            /mnt/podman/containers
+            /mnt/tmp
+          key: model-storage-${{ matrix.key }}-${{ runner.os }}-${{ hashFiles('models/models.yaml', 'containerfiles/Containerfile-min') }}
+          restore-keys: |
+            model-storage-${{ matrix.key }}-${{ runner.os }}-
+            model-storage-${{ matrix.key }}-
+
+      - name: Cache status
         run: |
-          sudo mkdir -p /mnt/docker /etc/docker
-          echo '{"data-root": "/mnt/docker"}' > /tmp/daemon.json
-          sudo mv /tmp/daemon.json /etc/docker/daemon.json
-          cat /etc/docker/daemon.json
-          sudo systemctl restart docker.service
-          df -h
+          echo "Cache hit: ${{ steps.cache-model-storage.outputs.cache-hit }}"
+          echo "Cache key: model-storage-${{ matrix.key }}-${{ runner.os }}-${{ hashFiles('models/models.yaml', 'containerfiles/Containerfile-min') }}"
+          if [[ "${{ steps.cache-model-storage.outputs.cache-hit }}" == "true" ]]; then
+            echo "✅ Using cached storage for model ${{ matrix.key }}"
+          else
+            echo "📦 Building fresh storage for model ${{ matrix.key }}"
+          fi
 
-      - name: Log in to GitHub Container Registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+      - name: Configure Podman storage  
+        run: |
+          # Create storage directories on /mnt which has more space
+          sudo mkdir -p /mnt/podman /mnt/tmp /mnt/containers
+          
+          # Determine the actual user ID (GitHub Actions runners often use 1001)
+          RUNNER_UID=$(id -u)
+          RUNNER_GID=$(id -g)
+          echo "Configuring for user ID: $RUNNER_UID, group ID: $RUNNER_GID"
+          
+          # Set ownership to current user for rootless podman
+          sudo chown -R $RUNNER_UID:$RUNNER_GID /mnt/podman /mnt/tmp /mnt/containers
+          sudo chmod -R u+rwx,g+rx /mnt/podman /mnt/tmp /mnt/containers
+          
+          # Ensure HOME directory is writable (important for GitHub Actions)
+          sudo chown -R $RUNNER_UID:$RUNNER_GID $HOME || true
+          
+          # Create user containers directory for rootless podman
+          mkdir -p ~/.config/containers
+          
+          # Configure Podman storage for rootless operation
+          # Use all available free space without size limits
+          tee ~/.config/containers/storage.conf << 'EOF'
+          [storage]
+          driver = "overlay"
+          graphroot = "/mnt/podman"
+          runroot = "/mnt/containers"
+          
+          [storage.options]
+          mount_program = "/usr/bin/fuse-overlayfs"
+          EOF
+          
+          # Set environment variables for temporary directories
+          echo "TMPDIR=/mnt/tmp" >> $GITHUB_ENV
+          echo "TMP=/mnt/tmp" >> $GITHUB_ENV
+          echo "TEMP=/mnt/tmp" >> $GITHUB_ENV
+          
+          # Create ramalama storage directories on / (root filesystem - 59G available)
+          sudo mkdir -p /home/runner/ramalama/store /home/runner/cache /home/runner/config
+          sudo chown -R $RUNNER_UID:$RUNNER_GID /home/runner/ramalama /home/runner/cache /home/runner/config
+          
+          # Redirect XDG directories to / for ramalama storage (backup approach)
+          # Primary approach uses --store parameter in ramalama convert command
+          echo "XDG_DATA_HOME=/home/runner" >> $GITHUB_ENV
+          echo "XDG_CACHE_HOME=/home/runner/cache" >> $GITHUB_ENV
+          echo "XDG_CONFIG_HOME=/home/runner/config" >> $GITHUB_ENV
+          
+          # Show available space and cache info
+          df -h /mnt
+          echo "Cache hit: ${{ steps.cache-model-storage.outputs.cache-hit }}"
+          if [[ "${{ steps.cache-model-storage.outputs.cache-hit }}" == "true" ]]; then
+            echo "📦 Using cached Podman storage for model ${{ matrix.key }}"
+            ls -la /mnt/podman/ || echo "Podman storage directory empty"
+          else
+            echo "🔨 Fresh Podman storage for model ${{ matrix.key }}"
+          fi
+          echo "Podman storage configuration complete"
 
-      - name: Define Image Tags and Build Args
-        id: image_details
+      - name: Check Source Image Availability
+        id: check-source
+        run: |
+          # Check if source image is available by attempting to pull it
+          OWNER_PATH="${{ needs.determine-image-owner.outputs.registry_owner_path }}"
+          MODEL_SOURCE_URL="${OWNER_PATH}/${{ matrix.model_source }}:latest"
+          
+          echo "Checking if source image exists: ${MODEL_SOURCE_URL}"
+          
+          # Set temporary directory environment variables for this step
+          export TMPDIR=/mnt/tmp
+          export TMP=/mnt/tmp
+          export TEMP=/mnt/tmp
+          
+          # First login to registry
+          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+          
+          # Try to pull the source image
+          if podman pull ${MODEL_SOURCE_URL}; then
+            echo "source-available=true" >> $GITHUB_OUTPUT
+            echo "✅ Source image found and pulled successfully"
+          else
+            echo "source-available=false" >> $GITHUB_OUTPUT
+            echo "❌ Source image not found or failed to pull"
+            exit 1
+          fi
+
+      - name: Define Image Tags
+        if: steps.check-source.outputs.source-available == 'true'
+        id: image_tags
         run: |
           OWNER_PATH="${{ needs.determine-image-owner.outputs.registry_owner_path }}"
-          BASE_IMAGE_LATEST="${OWNER_PATH}/${{ env.BASE_IMAGE_NAME_SUFFIX }}:latest"
-          APP_IMAGE_BASENAME="${{ env.APP_IMAGE_QWEN_4B_NAME_SUFFIX }}"
+          MODEL_NAME_SAFE="${{ matrix.name_safe || matrix.key }}"
+          APP_IMAGE_BASENAME="${MODEL_NAME_SAFE}-ramalama"
           TAG_LATEST="${OWNER_PATH}/${APP_IMAGE_BASENAME}:latest"
           TAG_SHA="${OWNER_PATH}/${APP_IMAGE_BASENAME}:${{ github.sha }}"
-          echo "BASE_IMAGE_ARG=${BASE_IMAGE_LATEST}" >> $GITHUB_OUTPUT
+          MODEL_SOURCE_URL="${OWNER_PATH}/${{ matrix.model_source }}:latest"
           echo "TAG_LATEST=${TAG_LATEST}" >> $GITHUB_OUTPUT
           echo "TAG_SHA=${TAG_SHA}" >> $GITHUB_OUTPUT
-          echo "All tags to build: ${TAG_LATEST}, ${TAG_SHA}"
-          echo "Base image for build-arg: ${BASE_IMAGE_LATEST}"
+          echo "MODEL_SOURCE_URL=${MODEL_SOURCE_URL}" >> $GITHUB_OUTPUT
+          echo "Building: ${{ matrix.name }} (${{ matrix.key }})"
 
-      - name: Build Qwen 4B app image
+      - name: Build ${{ matrix.name }} Image
+        if: steps.check-source.outputs.source-available == 'true'
         run: |
-          sudo podman --storage-driver overlay --root='/mnt/docker' build \
+          # Set temporary directory environment variables for this step
+          export TMPDIR=/mnt/tmp
+          export TMP=/mnt/tmp
+          export TEMP=/mnt/tmp
+          
+          podman build --squash-all \
             --format=oci \
-            --build-arg BASE_IMAGE_NAME=${{ steps.image_details.outputs.BASE_IMAGE_ARG }} \
-            --build-arg MODEL_SOURCE_NAME=quay.io/kugupta/qwen3-4b:latest \
-            --tag ${{ steps.image_details.outputs.TAG_LATEST }} \
-            --tag ${{ steps.image_details.outputs.TAG_SHA }} \
-            -f ./containerfiles/Containerfile-qwen-4b \
+            --build-arg BASE_IMAGE_NAME=${{ needs.build-base-image.outputs.base_image_tag }} \
+            --build-arg MODEL_SOURCE_NAME=${{ steps.image_tags.outputs.MODEL_SOURCE_URL }} \
+            --tag ${{ steps.image_tags.outputs.TAG_LATEST }} \
+            --tag ${{ steps.image_tags.outputs.TAG_SHA }} \
+            -f ./containerfiles/${{ matrix.containerfile }} \
             .
 
-      - name: Push Qwen 4B app image
-        run: |
-          sudo podman --storage-driver overlay --root='/mnt/docker' push ${{ steps.image_details.outputs.TAG_LATEST }}
-          sudo podman --storage-driver overlay --root='/mnt/docker' push ${{ steps.image_details.outputs.TAG_SHA }}
+      - name: Push ${{ matrix.name }} Image (with retry)
+        if: steps.check-source.outputs.source-available == 'true'
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 30
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: |
+            export TMPDIR=/mnt/tmp
+            export TMP=/mnt/tmp
+            export TEMP=/mnt/tmp
+            podman push ${{ steps.image_tags.outputs.TAG_LATEST }}
+            podman push ${{ steps.image_tags.outputs.TAG_SHA }}
+            
 
-  build-app-image-qwen-30b:
-    name: Build App Image (Qwen 30B)
+
+  build-summary:
+    name: Build Summary
     runs-on: ubuntu-latest
-    needs: [determine-image-owner, build-base-image]
-    permissions:
-      contents: read
-      packages: write
-
+    needs: [discover-models, build-base-image, build-model-images, build-source-images]
+    if: always()
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Turn off IPv6
+        
+      - name: Generate Detailed Summary
         run: |
-          sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
-          sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
-
-      - name: Upgrade to Podman 5
-        run: |
-          # Enable universe repository which contains podman
-          sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu oracular universe"
-          # Update package lists
-          sudo apt-get update
-          sudo apt-get purge firefox
-          # Install specific podman version
-          sudo apt-get upgrade
-
-      - name: Print Disk Space
-        shell: bash
-        run: |
-          df -h
-
-      - name: Free Disk Space
-        shell: bash
-        run: |
-          sudo docker rmi "$(docker image ls -aq)" >/dev/null 2>&1 || true
-          sudo rm -rf \
-            /usr/share/dotnet /usr/local/lib/android /opt/ghc \
-            /usr/local/share/powershell /usr/share/swift /usr/local/.ghcup \
-            /usr/share/dotnet /usr/lib/jvm /opt/hostedtoolcache/CodeQL \
-            "$AGENT_TOOLSDIRECTORY" || true
-          sudo swapoff -a
-          sudo rm -f /mnt/Swapfile
-
-      # /mnt has ~ 65 GB free disk space. / is too small.
-      - name: Reconfigure data-root
-        run: |
-          sudo mkdir -p /mnt/docker /etc/docker
-          echo '{"data-root": "/mnt/docker"}' > /tmp/daemon.json
-          sudo mv /tmp/daemon.json /etc/docker/daemon.json
-          cat /etc/docker/daemon.json
-          sudo systemctl restart docker.service
-          df -h
-
-      - name: Log in to GitHub Container Registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
-
-      - name: Define Image Tags and Build Args
-        id: image_details
-        run: |
-          OWNER_PATH="${{ needs.determine-image-owner.outputs.registry_owner_path }}"
-          BASE_IMAGE_LATEST="${OWNER_PATH}/${{ env.BASE_IMAGE_NAME_SUFFIX }}:latest" # This will be the image built by build-base-image job
-          APP_IMAGE_BASENAME="${{ env.APP_IMAGE_QWEN_30B_NAME_SUFFIX }}"
-          TAG_LATEST="${OWNER_PATH}/${APP_IMAGE_BASENAME}:latest"
-          TAG_SHA="${OWNER_PATH}/${APP_IMAGE_BASENAME}:${{ github.sha }}"
-          echo "BASE_IMAGE_ARG=${BASE_IMAGE_LATEST}" >> $GITHUB_OUTPUT
-          echo "TAG_LATEST=${TAG_LATEST}" >> $GITHUB_OUTPUT
-          echo "TAG_SHA=${TAG_SHA}" >> $GITHUB_OUTPUT
-          echo "All tags to build: ${TAG_LATEST}, ${TAG_SHA}"
-          echo "Base image for build-arg: ${BASE_IMAGE_LATEST}"
-
-      - name: Build Qwen 30B app image
-        run: |
-          sudo podman --storage-driver overlay --root='/mnt/docker' build --squash-all \
-            --format=oci \
-            --build-arg BASE_IMAGE_NAME=${{ steps.image_details.outputs.BASE_IMAGE_ARG }} \
-            --build-arg MODEL_SOURCE_NAME=quay.io/kugupta/qwen3-30b:latest \
-            --tag ${{ steps.image_details.outputs.TAG_LATEST }} \
-            --tag ${{ steps.image_details.outputs.TAG_SHA }} \
-            -f ./containerfiles/Containerfile-qwen-30b \
-            .
-
-      - name: Push Qwen 30B app image
-        run: |
-          sudo podman --storage-driver overlay --root='/mnt/docker' push ${{ steps.image_details.outputs.TAG_LATEST }}
-          sudo podman --storage-driver overlay --root='/mnt/docker' push ${{ steps.image_details.outputs.TAG_SHA }}
+          echo "## 🏗️ Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Overall job status
+          echo "### 📊 Overall Status" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Base Image | ${{ needs.build-base-image.result == 'success' && '✅ Success' || needs.build-base-image.result == 'failure' && '❌ Failed' || needs.build-base-image.result == 'cancelled' && '⏹️ Cancelled' || '⏭️ Skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Source Images | ${{ needs.build-source-images.result == 'success' && '✅ Success' || needs.build-source-images.result == 'failure' && '⚠️ Partial/Failed' || needs.build-source-images.result == 'cancelled' && '⏹️ Cancelled' || '⏭️ Skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Model Images | ${{ needs.build-model-images.result == 'success' && '✅ Success' || needs.build-model-images.result == 'failure' && '⚠️ Partial/Failed' || needs.build-model-images.result == 'cancelled' && '⏹️ Cancelled' || '⏭️ Skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Model discovery info
+          if [[ "${{ needs.discover-models.outputs.has_models }}" == "true" ]]; then
+            echo "### 🤖 Models Discovered" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # Parse and display models
+            echo '${{ needs.discover-models.outputs.models }}' | python3 -c "
+          import json, sys, os
+          
+          try:
+              models = json.load(sys.stdin)
+              model_list = models.get('include', [])
+              
+              print(f'**Total Models Found:** {len(model_list)}')
+              print('')
+              print('| Model | Key | Source | Status |')
+              print('|-------|-----|--------|--------|')
+              
+              for model in model_list:
+                  name = model.get('name', model['key'])
+                  key = model['key']
+                  source = model.get('model_source', 'Unknown')
+                  
+                  # Note: Individual model status would need to be tracked separately
+                  # For now, we show discovered status
+                  status = '🔍 Discovered'
+                  
+                  print(f'| **{name}** | \`{key}\` | \`{source}\` | {status} |')
+                  
+          except Exception as e:
+              print(f'❌ Error parsing models: {e}')
+          " >> $GITHUB_STEP_SUMMARY
+          
+          else
+            echo "### 🤖 Models" >> $GITHUB_STEP_SUMMARY
+            echo "❌ No models discovered or models.yaml not found" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Build results interpretation
+          echo "### 📝 Notes" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.build-source-images.result }}" == "failure" ]]; then
+            echo "⚠️  **Source Images**: Some source images may have failed to build. Model images for failed sources were automatically skipped." >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.build-model-images.result }}" == "failure" ]]; then
+            echo "⚠️  **Model Images**: Some model images may have failed to build or were skipped due to missing source images." >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.build-source-images.result }}" == "success" && "${{ needs.build-model-images.result }}" == "success" ]]; then
+            echo "✅ **All builds successful!** All discovered models have been built and pushed successfully." >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📋 **Workflow Strategy**: Individual model builds are skipped gracefully if their source images are not available, allowing other models to continue building." >> $GITHUB_STEP_SUMMARY
+          
+          # Get detailed job results using GitHub API
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔍 Detailed Build Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check if we can get job details
+          if command -v curl >/dev/null 2>&1; then
+            echo "Fetching detailed job results from GitHub API..." >> $GITHUB_STEP_SUMMARY
+            
+            # Get workflow run jobs
+            curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" | \
+              python3 -c "
+          import json, sys
+          
+          try:
+              data = json.load(sys.stdin)
+              jobs = data.get('jobs', [])
+              
+              # Find matrix jobs
+              source_jobs = [j for j in jobs if j['name'].startswith('Build Source Images')]
+              model_jobs = [j for j in jobs if j['name'].startswith('Build Model Images')]
+              
+              if source_jobs:
+                  print('#### 📦 Source Image Results')
+                  print('| Model | Status | Duration |')
+                  print('|-------|--------|----------|')
+                  for job in source_jobs:
+                      name = job['name'].replace('Build Source Images (', '').replace(')', '')
+                      status = job['status']
+                      conclusion = job.get('conclusion', 'unknown')
+                      duration = 'N/A'
+                      
+                      if job.get('started_at') and job.get('completed_at'):
+                          import datetime
+                          start = datetime.datetime.fromisoformat(job['started_at'].replace('Z', '+00:00'))
+                          end = datetime.datetime.fromisoformat(job['completed_at'].replace('Z', '+00:00'))
+                          duration = str(end - start).split('.')[0]
+                      
+                      status_emoji = {
+                          'success': '✅',
+                          'failure': '❌', 
+                          'cancelled': '⏹️',
+                          'skipped': '⏭️'
+                      }.get(conclusion, '❓')
+                      
+                      print(f'| {name} | {status_emoji} {conclusion} | {duration} |')
+                  print('')
+              
+              if model_jobs:
+                  print('#### 🤖 Model Image Results')
+                  print('| Model | Status | Duration |')
+                  print('|-------|--------|----------|')
+                  for job in model_jobs:
+                      name = job['name'].replace('Build Model Images (', '').replace(')', '')
+                      status = job['status']
+                      conclusion = job.get('conclusion', 'unknown')
+                      duration = 'N/A'
+                      
+                      if job.get('started_at') and job.get('completed_at'):
+                          import datetime
+                          start = datetime.datetime.fromisoformat(job['started_at'].replace('Z', '+00:00'))
+                          end = datetime.datetime.fromisoformat(job['completed_at'].replace('Z', '+00:00'))
+                          duration = str(end - start).split('.')[0]
+                      
+                      status_emoji = {
+                          'success': '✅',
+                          'failure': '❌', 
+                          'cancelled': '⏹️',
+                          'skipped': '⏭️'
+                      }.get(conclusion, '❓')
+                      
+                      print(f'| {name} | {status_emoji} {conclusion} | {duration} |')
+                  
+          except Exception as e:
+              print(f'❌ Error fetching job details: {e}')
+              print('')
+              print('💡 **Tip**: Check the Actions tab for detailed job results')
+              
+          " >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "💡 **Tip**: Check the Actions tab for detailed individual job results" >> $GITHUB_STEP_SUMMARY
+          
+          else
+            echo "💡 **Tip**: Check the Actions tab for detailed individual job results" >> $GITHUB_STEP_SUMMARY
+          fi 

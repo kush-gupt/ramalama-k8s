@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ramalama-deployment
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: llm-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: llm-server
+    spec:
+      containers:
+      - name: ramalama
+        image: MODEL_IMAGE
+        command: ["/usr/bin/llama-server"]
+        args:
+        - '--port'
+        - '$(PORT)'
+        - '--model'
+        - '$(MODEL_FILE)'
+        - '--no-warmup'
+        - '--jinja'
+        - '--log-colors'
+        - '--alias'
+        - '$(ALIAS)'
+        - '--ctx-size'
+        - '$(CTX_SIZE)'
+        - '--temp'
+        - '$(TEMP)'
+        - '--cache-reuse'
+        - '$(CACHE_REUSE)'
+        - '-ngl'
+        - '$(NGL)'
+        - '--threads'
+        - '$(THREADS)'
+        - '--top-k'
+        - '$(TOP_K)'
+        - '--top-p'
+        - '$(TOP_P)'
+        - '--min-p'
+        - '$(MIN_P)'
+        - '--host'
+        - '$(HOST)'
+        ports:
+        - containerPort: 8080
+          name: http-api
+        env:
+        - name: MODEL_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: model-config
+              key: MODEL_NAME
+        - name: MODEL_FILE
+          valueFrom:
+            configMapKeyRef:
+              name: model-config
+              key: MODEL_FILE
+        - name: ALIAS
+          valueFrom:
+            configMapKeyRef:
+              name: model-config
+              key: ALIAS
+        envFrom:
+        - configMapRef:
+            name: ramalama-config 

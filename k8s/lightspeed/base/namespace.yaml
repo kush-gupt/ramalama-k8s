@@ -1,0 +1,13 @@
+apiVersion: project.openshift.io/v1
+kind: Project
+metadata:
+  name: openshift-lightspeed
+  labels:
+    name: openshift-lightspeed
+    app.kubernetes.io/name: openshift-lightspeed
+    app.kubernetes.io/part-of: ramalama-k8s
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3" 
