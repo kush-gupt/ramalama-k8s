@@ -144,16 +144,7 @@ oc apply -k k8s/models/qwen3-4b
 
 ### 🎯 **Deployment Options**
 
-#### **Option 1: GitOps Deployment (Recommended)**
-```bash
-# 🔥 Deploy with ArgoCD - single command handles timing automatically
-oc apply -f k8s/lightspeed/argocd/application-qwen3-4b.yaml
-
-# ✅ Monitor deployment
-oc get applications -n openshift-gitops | grep lightspeed
-```
-
-#### **Option 2: Direct Kustomize (Two-Step Process)**
+#### **Option 1: Direct Kustomize (Two-Step Process, reliable and minimalist)**
 Due to operator timing dependencies, direct deployment requires two steps:
 
 ```bash
@@ -165,6 +156,15 @@ oc wait --for=condition=Ready pod -l app.kubernetes.io/name=lightspeed-operator 
 
 # 🎯 Step 3: Apply complete configuration
 oc apply -k k8s/lightspeed/overlays/qwen3-4b
+```
+
+#### **Option 2: GitOps Deployment (If you have it installed)**
+```bash
+# 🔥 Deploy with ArgoCD - single command handles timing automatically
+oc apply -f k8s/lightspeed/argocd/application-qwen3-4b.yaml
+
+# ✅ Monitor deployment
+oc get applications -n openshift-gitops | grep lightspeed
 ```
 
 ### **What You Get**
