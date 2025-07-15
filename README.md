@@ -230,13 +230,13 @@ Get AI-powered assistance for your OpenShift cluster management! Deploy OpenShif
 ### ⚡ Quick Deploy Lightspeed
 
 ```bash
-# Deploy with OpenShift GitOps if installed (all models)
-oc apply -f k8s/lightspeed/argocd/applicationset-lightspeed.yaml
+# Option 1: Deploy with OpenShift GitOps if installed (single model)
+oc apply -f k8s/lightspeed/argocd/application-qwen3-4b.yaml
 
-# Deploy for specific model
+# Option 2: Deploy directly with Kustomize (single model)
 oc apply -k k8s/lightspeed/overlays/qwen3-4b
 
-# Deploy with auto-discovery
+# Option 3: Deploy with auto-discovery
 oc apply -k k8s/lightspeed/overlays/auto-discovery
 
 # Verify deployment in the openshift-lightspeed namespace

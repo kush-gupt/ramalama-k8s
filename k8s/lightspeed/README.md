@@ -40,21 +40,21 @@ Before deploying OpenShift Lightspeed, ensure you have:
 
 ### Option 1: Deploy with OpenShift GitOps
 
-If you have OpenShift GitOps installed, you can deploy using our ApplicationSet:
+If you have OpenShift GitOps installed, deploy a single model to avoid resource conflicts:
 
 ```bash
 # Ensure OpenShift GitOps is installed and ready
 oc get csv -n openshift-gitops-operator | grep gitops
 
-# Deploy all lightspeed configurations for all models
-oc apply -f k8s/lightspeed/argocd/applicationset-lightspeed.yaml
-
-# Or deploy for a specific model
+# Deploy for a specific model (recommended)
 oc apply -f k8s/lightspeed/argocd/application-qwen3-4b.yaml
 
 # Check GitOps applications
-oc get applications -n openshift-gitops
+oc get applications -n openshift-gitops | grep lightspeed
 ```
+
+> [!WARNING]  
+> **ApplicationSet Conflicts**: The ApplicationSet deploys multiple models that all conflict over the same `OLSConfig` resource. For production use, deploy only one Lightspeed configuration per cluster.
 
 ### Option 2: Direct Kustomize Deployment
 
@@ -172,19 +172,19 @@ oc auth can-i '*' '*' --all-namespaces
 
 Choose your deployment method:
 
-#### Method A: OpenShift GitOps ApplicationSet (All Models)
+#### Method A: Single Model with GitOps (Recommended)
 ```bash
 # Ensure OpenShift GitOps is ready
 oc get pods -n openshift-gitops
 
-# Deploy ApplicationSet
-oc apply -f k8s/lightspeed/argocd/applicationset-lightspeed.yaml
+# Deploy single model Application
+oc apply -f k8s/lightspeed/argocd/application-qwen3-4b.yaml
 
 # Monitor deployment
-oc get applications -n openshift-gitops -w
+oc get application openshift-lightspeed-qwen3-4b -n openshift-gitops -w
 ```
 
-#### Method B: Specific Model
+#### Method B: Direct Kustomize Deployment
 ```bash
 oc apply -k k8s/lightspeed/overlays/qwen3-4b
 ```
@@ -192,6 +192,19 @@ oc apply -k k8s/lightspeed/overlays/qwen3-4b
 #### Method C: Auto-Discovery  
 ```bash
 oc apply -k k8s/lightspeed/overlays/auto-discovery
+```
+
+#### Method D: Multiple Models (Expert Only)
+
+> [!WARNING]  
+> **Resource Conflicts**: Multiple Applications will conflict over the same `OLSConfig`. Use only if you understand ArgoCD resource management.
+
+```bash
+# Deploy ApplicationSet (creates resource conflicts)
+oc apply -f k8s/lightspeed/argocd/applicationset-lightspeed.yaml
+
+# Monitor for SharedResourceWarning messages
+oc get applications -n openshift-gitops | grep lightspeed
 ```
 
 ### Step 3: Verify Installation
@@ -230,22 +243,25 @@ oc get all -n openshift-lightspeed
 ## 🎉 Quick Commands Summary
 
 ```bash
-# Deploy with OpenShift GitOps (all models)
-oc apply -f k8s/lightspeed/argocd/applicationset-lightspeed.yaml
+# Deploy with OpenShift GitOps (single model - recommended)
+oc apply -f k8s/lightspeed/argocd/application-qwen3-4b.yaml
 
-# Deploy specific model
+# Or deploy specific model directly
 oc apply -k k8s/lightspeed/overlays/qwen3-4b
 
-# Deploy with auto-discovery
+# Or deploy with auto-discovery
 oc apply -k k8s/lightspeed/overlays/auto-discovery
 
 # Check GitOps applications
-oc get applications -n openshift-gitops
+oc get applications -n openshift-gitops | grep lightspeed
 
 # Check status
 oc get olsconfig,pods,svc -n openshift-lightspeed
 
-# Clean up
+# Clean up GitOps application
+oc delete application openshift-lightspeed-qwen3-4b -n openshift-gitops
+
+# Or clean up direct deployment
 oc delete -k k8s/lightspeed/overlays/qwen3-4b
 ```
 

@@ -397,7 +397,7 @@ EOF
 substitute_template() {
     local template_file="$1"
     local output_file="$2"
-    local app_image_url="${REGISTRY_PATH}/${MODEL_NAME_SAFE}-ramalama:latest"
+    local app_image_url="${REGISTRY_PATH}/${MODEL_NAME_SAFE}-ramalama"
     
     sed -e "s|{{MODEL_NAME}}|$MODEL_NAME|g" \
         -e "s|{{MODEL_NAME_SAFE}}|$MODEL_NAME_SAFE|g" \

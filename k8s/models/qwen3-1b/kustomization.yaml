@@ -34,5 +34,5 @@ configMapGenerator:
 
 images:
 - name: MODEL_IMAGE
-  newName: "ghcr.io/kush-gupt/qwen3-1b-ramalama:latest"
+  newName: "ghcr.io/kush-gupt/qwen3-1b-ramalama"
   newTag: latest 
