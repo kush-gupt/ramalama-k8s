@@ -174,7 +174,7 @@ podman build \
 ```bash
 podman run -it --rm -p 8080:8080 \
   ${APP_IMAGE_TAG} \
-  llama-server.sh \
+  llama-server \
   --port 8080 \
   --model /mnt/models/Qwen3-4B-Q4_K_M.gguf/Qwen3-4B-Q4_K_M.gguf \
   --host 0.0.0.0
