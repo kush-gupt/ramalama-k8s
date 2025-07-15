@@ -11,9 +11,11 @@ resources:
 
 namePrefix: deepseek-r1-qwen3-8b-
 
-commonLabels:
-  app.kubernetes.io/instance: deepseek-r1-qwen3-8b
-  model: deepseek-r1-qwen3-8b
+labels:
+  - includeSelectors: true
+    pairs:
+      app.kubernetes.io/instance: deepseek-r1-qwen3-8b
+      model: deepseek-r1-qwen3-8b
 
 # Model-specific configuration
 configMapGenerator:
@@ -40,5 +42,8 @@ images:
     newTag: latest
 
 # Model-specific resource patches  
-patchesStrategicMerge:
-  - model-patch.yaml
+patches:
+  - path: model-patch.yaml
+    target:
+      kind: Deployment
+      name: ramalama-deployment

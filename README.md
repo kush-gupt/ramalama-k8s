@@ -184,27 +184,31 @@ podman run -it --rm -p 8080:8080 \
 
 ## ☸️ Kubernetes Deployment
 
-### 🎯 Simple Deployment
+### 🎯 Model-Specific Deployment
+
+Deploy individual models using their specific directories:
 
 ```bash
-# Development environment
-kubectl apply -k k8s/overlays/dev
-
-# Production environment  
-kubectl apply -k k8s/overlays/production
+# Deploy specific models
+kubectl apply -k k8s/models/qwen3-1b
+kubectl apply -k k8s/models/qwen3-4b
+kubectl apply -k k8s/models/qwen3-30b
+kubectl apply -k k8s/models/deepseek-r1-qwen3-8b
 ```
 
 ### 🔄 GitOps with ArgoCD
 
-For automated deployments:
+For automated deployments with environment-specific configurations:
 
 ```bash
-# Single model
+# Single model with environment overlay (ArgoCD Application)
 kubectl apply -f k8s/argocd/application-example.yaml
 
-# All models across environments
+# All models across environments (ArgoCD ApplicationSet)
 kubectl apply -f k8s/argocd/applicationset-example.yaml
 ```
+
+**Note**: Environment overlays (`k8s/overlays/dev` and `k8s/overlays/production`) are designed to work with ArgoCD's kustomize overlay feature, not standalone kubectl deployments. They are applied automatically when using the ArgoCD ApplicationSet.
 
 ## 🎛️ Model Management
 

@@ -10,10 +10,12 @@ resources:
   - service.yaml
   - configmap.yaml
 
-commonLabels:
-  app.kubernetes.io/name: ramalama
-  app.kubernetes.io/part-of: ramalama-k8s
-  app.kubernetes.io/managed-by: kustomize
+labels:
+  - includeSelectors: true
+    pairs:
+      app.kubernetes.io/name: ramalama
+      app.kubernetes.io/part-of: ramalama-k8s
+      app.kubernetes.io/managed-by: kustomize
 
 commonAnnotations:
   argocd.argoproj.io/managed: "true"
@@ -22,13 +24,10 @@ images:
   - name: MODEL_IMAGE
     newTag: latest
 
-replicas:
-  - name: ramalama-deployment
-    count: 1
-
-# Configuration for all models
+# Base configuration for all models
 configMapGenerator:
   - name: ramalama-config
+    behavior: merge
     literals:
       - PORT=8080
       - HOST=0.0.0.0
@@ -36,8 +35,4 @@ configMapGenerator:
       - NO_WARMUP=true
       - JINJA=true
       - NGL=-1
-      - MIN_P=0
-
-# Base patches for all deployments
-patchesStrategicMerge:
-  - deployment-patch.yaml 
+      - MIN_P=0 

@@ -11,12 +11,12 @@ namespace: ramalama-production
 resources:
   - ../../base
   - namespace.yaml
-  - networkpolicy.yaml
-  - podmonitor.yaml
 
-commonLabels:
-  environment: production
-  version: stable
+labels:
+  - includeSelectors: true
+    pairs:
+      environment: production
+      version: stable
 
 commonAnnotations:
   argocd.argoproj.io/sync-options: CreateNamespace=true
@@ -32,9 +32,11 @@ configMapGenerator:
       - CACHE_REUSE=512
 
 # Production resource limits and security
-patchesStrategicMerge:
-  - resources-patch.yaml
-  - security-patch.yaml
+patches:
+  - path: resources-patch.yaml
+    target:
+      kind: Deployment
+      name: ramalama-deployment
 
 # Production-specific image tags
 images:

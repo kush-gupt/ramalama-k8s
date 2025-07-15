@@ -12,9 +12,11 @@ resources:
   - ../../base
   - namespace.yaml
 
-commonLabels:
-  environment: dev
-  version: latest
+labels:
+  - includeSelectors: true
+    pairs:
+      environment: dev
+      version: latest
 
 commonAnnotations:
   argocd.argoproj.io/sync-options: CreateNamespace=true
@@ -29,8 +31,11 @@ configMapGenerator:
       - CTX_SIZE=2048
 
 # Development resource limits
-patchesStrategicMerge:
-  - resources-patch.yaml
+patches:
+  - path: resources-patch.yaml
+    target:
+      kind: Deployment
+      name: ramalama-deployment
 
 # Development-specific image tags
 images:

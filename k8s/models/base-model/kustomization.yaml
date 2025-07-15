@@ -7,10 +7,13 @@ metadata:
     argocd.argoproj.io/sync-wave: "1"
 
 resources:
+  - ../../base
   - deployment.yaml
 
-commonLabels:
-  app.kubernetes.io/component: llm-server
+labels:
+  - includeSelectors: true
+    pairs:
+      app.kubernetes.io/component: llm-server
 
 # Model-specific configuration
 configMapGenerator:
@@ -20,6 +23,9 @@ configMapGenerator:
       - MODEL_FILE=/mnt/models/model.file
       - ALIAS=base-model
 
-# Model-specific patches
-patchesStrategicMerge:
-  - model-patch.yaml 
+# Apply deployment patches
+patches:
+  - path: deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: ramalama-deployment 
