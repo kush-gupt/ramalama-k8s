@@ -11,7 +11,7 @@ resources:
   - configmap.yaml
 
 labels:
-  - includeSelectors: true
+  - includeSelectors: false
     pairs:
       app.kubernetes.io/name: ramalama
       app.kubernetes.io/part-of: ramalama-k8s

@@ -11,11 +11,9 @@ resources:
 
 namePrefix: qwen3-4b-
 
-labels:
-  - includeSelectors: true
-    pairs:
-      app.kubernetes.io/instance: qwen3-4b
-      model: qwen3-4b
+commonLabels:
+  app.kubernetes.io/instance: qwen3-4b
+  model: qwen3-4b
 
 # Model-specific configuration
 configMapGenerator:

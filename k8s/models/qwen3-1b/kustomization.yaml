@@ -11,11 +11,9 @@ resources:
 
 namePrefix: "qwen3-1b-"
 
-labels:
-  - includeSelectors: true
-    pairs:
-      app.kubernetes.io/instance: "qwen3-1b"
-      model: "qwen3-1b"
+commonLabels:
+  app.kubernetes.io/instance: "qwen3-1b"
+  model: "qwen3-1b"
 
 configMapGenerator:
 - name: model-config
@@ -36,5 +34,5 @@ configMapGenerator:
 
 images:
 - name: MODEL_IMAGE
-  newName: "ghcr.io/kush-gupt/qwen3-1b-ramalama:latest"
+  newName: "ghcr.io/kush-gupt/qwen3-1b-ramalama"
   newTag: latest 

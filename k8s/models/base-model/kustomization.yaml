@@ -10,10 +10,8 @@ resources:
   - ../../base
   - deployment.yaml
 
-labels:
-  - includeSelectors: true
-    pairs:
-      app.kubernetes.io/component: llm-server
+commonLabels:
+  app.kubernetes.io/component: llm-server
 
 # Model-specific configuration
 configMapGenerator:
