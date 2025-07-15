@@ -97,17 +97,33 @@ oc apply -k k8s/overlays/production
 ### 3️⃣ Test Your Model
 
 ```bash
-# 🔗 Port forward to access the API
-oc port-forward -n ramalama svc/qwen3-1b-ramalama-service 8080:8080
+# 🧪 Deploy a test pod in the cluster to test service connectivity
+oc run model-test --image=curlimages/curl:8.10.1 --rm -i --tty -n ramalama -- sh
 
-# 💬 Test the chat API
-curl -X POST http://localhost:8080/v1/chat/completions \
+# 💬 Inside the test pod, test the chat API (replace 'qwen3-1b' with your model name)
+curl -X POST http://qwen3-1b-ramalama-service.ramalama.svc.cluster.local:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "default",
     "messages": [{"role": "user", "content": "Hello! How are you?"}],
     "temperature": 0.7
   }'
+
+# 🔍 Test model availability
+curl http://qwen3-1b-ramalama-service.ramalama.svc.cluster.local:8080/v1/models
+
+# 📋 Exit the test pod (it will be automatically deleted due to --rm flag)
+exit
+```
+
+**Alternative: One-liner test without interactive pod**
+```bash
+# 🚀 Quick test without entering the pod
+oc run model-test --image=curlimages/curl:8.10.1 --rm -n ramalama \
+  --command -- curl -X POST \
+  http://qwen3-1b-ramalama-service.ramalama.svc.cluster.local:8080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model": "default", "messages": [{"role": "user", "content": "Hello! How are you?"}], "temperature": 0.7}'
 ```
 
 ## 🎛️ **OpenShift Lightspeed Integration**
