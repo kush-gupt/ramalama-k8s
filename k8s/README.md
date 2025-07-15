@@ -38,7 +38,7 @@ k8s/
 │   ├── base-model/              # Base model template
 │   │   ├── kustomization.yaml
 │   │   └── deployment.yaml
-│   ├── qwen-4b/                 # Example model configuration
+│   ├── qwen3-4b/                 # Example model configuration
 │   │   └── kustomization.yaml
 │   └── [other-models]/
 └── argocd/                      # ArgoCD Application examples
@@ -163,10 +163,10 @@ For deploying a single model to a specific environment:
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: ramalama-qwen-4b-prod
+  name: ramalama-qwen3-4b-prod
 spec:
   source:
-    path: k8s/models/qwen-4b
+    path: k8s/models/qwen3-4b
     kustomize:
       overlays:
       - ../../../overlays/production
@@ -240,14 +240,14 @@ spec:
 3. **ArgoCD Sync Issues**
    ```bash
    # Check application status
-   argocd app get ramalama-qwen-4b-dev
-   ```
+argocd app get ramalama-qwen3-4b-dev
+```
 
 ### Debugging Commands
 
 ```bash
 # Test kustomization locally
-kustomize build k8s/models/qwen-4b
+kustomize build k8s/models/qwen3-4b
 
 # Apply with overlays
 kustomize build k8s/overlays/dev | kubectl apply -f -

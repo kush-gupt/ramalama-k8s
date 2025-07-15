@@ -91,13 +91,13 @@ Deploy a pre-built model in seconds:
 
 ```bash
 # Deploy Qwen 4B model to your cluster
-kubectl apply -k k8s/overlays/dev
+kubectl apply -k k8s/models/qwen3-4b
 
 # Check if it's running
-kubectl get pods -n ramalama-dev
+kubectl get pods -l model=qwen3-4b
 
 # Access the API (when pod is ready)
-kubectl port-forward -n ramalama-dev svc/qwen3-4b-ramalama-service 8080:8080
+kubectl port-forward svc/qwen3-4b-ramalama-service 8080:8080
 ```
 
 🎉 **That's it!** Your model is now running at `http://localhost:8080`
@@ -159,10 +159,10 @@ podman push ${IMAGE_OWNER}/qwen3-4b-source:latest
 ### Step 4: Build Your Model Image
 
 ```bash
-export APP_IMAGE_TAG="${IMAGE_OWNER}/qwen-4b-ramalama:latest"
+export APP_IMAGE_TAG="${IMAGE_OWNER}/qwen3-4b-ramalama:latest"
 
 podman build \
-  -f containerfiles/Containerfile-qwen-4b \
+  -f containerfiles/Containerfile-qwen3-4b \
   --build-arg BASE_IMAGE_NAME="${BASE_IMAGE_TAG}" \
   --build-arg MODEL_SOURCE_NAME="${IMAGE_OWNER}/qwen3-4b-source:latest" \
   -t "${APP_IMAGE_TAG}" \
