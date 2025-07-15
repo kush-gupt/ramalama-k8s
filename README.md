@@ -207,8 +207,8 @@ kubectl apply -f k8s/argocd/application-example.yaml
 # All models across environments (ArgoCD ApplicationSet)
 kubectl apply -f k8s/argocd/applicationset-example.yaml
 ```
-
-**Note**: Environment overlays (`k8s/overlays/dev` and `k8s/overlays/production`) are designed to work with ArgoCD's kustomize overlay feature, not standalone kubectl deployments. They are applied automatically when using the ArgoCD ApplicationSet.
+> [!IMPORTANT]  
+> Environment overlays (`k8s/overlays/dev` and `k8s/overlays/production`) are designed to work with ArgoCD's kustomize overlay feature, not standalone kubectl deployments. They are applied automatically when using the ArgoCD ApplicationSet.
 
 ## 🎛️ Model Management
 
