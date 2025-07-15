@@ -36,22 +36,11 @@ spec:
         repoURL: https://github.com/kush-gupt/ramalama-k8s.git
         targetRevision: HEAD
         path: '{{path}}'
-          
-      destination:
-        server: https://kubernetes.default.svc
-        namespace: openshift-lightspeed
-        
-      syncPolicy:
-        automated:
-          prune: true
-          selfHeal: true
-          allowEmpty: false
-        syncOptions:
-          - CreateNamespace=true
-          - PrunePropagationPolicy=foreground
-          - PruneLast=true
-          - RespectIgnoreDifferences=true
-          - ServerSideApply=true
+        kustomize:
+          # Exclude Project resources since they're created with the operator
+          exclusions:
+            - apiGroups: ["project.openshift.io"]
+              kinds: ["Project"]
         retry:
           limit: 5
           backoff:
@@ -73,10 +62,7 @@ spec:
         - /data
       - group: "project.openshift.io"
         kind: Project
-        jsonPointers:
-        - /metadata/annotations
-        - /metadata/labels
-        
+        # Ignore all differences for Project since it's pre-created with OLS
       info:
       - name: 'Component:'
         value: 'OpenShift Lightspeed'
