@@ -21,23 +21,6 @@ spec:
       exclusions:
         - apiGroups: ["project.openshift.io"]
           kinds: ["Project"]
-    
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: openshift-lightspeed
-    
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-      allowEmpty: false
-    syncOptions:
-      - CreateNamespace=true
-      - PrunePropagationPolicy=foreground
-      - PruneLast=true
-      - RespectIgnoreDifferences=true
-      - ServerSideApply=true
-      - SkipDryRunOnMissingResource=true
     retry:
       limit: 5
       backoff:
