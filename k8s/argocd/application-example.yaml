@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/name: ramalama
     app.kubernetes.io/component: llm-server
     environment: dev
-    model: qwen-4b
+    model: qwen3-4b
   annotations:
     argocd.argoproj.io/sync-wave: "2"
 spec:
@@ -16,7 +16,7 @@ spec:
   source:
     repoURL: https://github.com/kush-gupt/ramalama-k8s.git
     targetRevision: HEAD
-    path: k8s/models/qwen-4b
+    path: k8s/models/qwen3-4b
     
   destination:
     server: https://kubernetes.default.svc

@@ -34,7 +34,7 @@ spec:
       
       source:
         repoURL: https://github.com/kush-gupt/ramalama-k8s.git
-        targetRevision: feat/model-mgmt
+        targetRevision: HEAD
         path: '{{path}}'
           
       destination:

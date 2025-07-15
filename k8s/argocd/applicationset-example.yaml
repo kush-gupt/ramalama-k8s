@@ -25,9 +25,6 @@ spec:
           - env: dev
             namespace: ramalama
             server: https://kubernetes.default.svc
-          - env: staging
-            namespace: ramalama
-            server: https://kubernetes.default.svc
           - env: production
             namespace: ramalama
             server: https://kubernetes.default.svc
