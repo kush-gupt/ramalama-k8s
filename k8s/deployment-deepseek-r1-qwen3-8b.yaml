@@ -26,9 +26,8 @@ spec:
           capabilities:
             drop:
             - "ALL"
-        command: ["/usr/libexec/ramalama/ramalama-serve-core"]
+        command: ["/usr/bin/llama-server"]
         args:
-        - 'llama-server'
         - '--port'
         - '8080'
         - '--model'

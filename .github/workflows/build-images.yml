@@ -333,6 +333,20 @@ jobs:
           echo "Current subgid entries:"
           grep "$RUNNER_USER" /etc/subgid || echo "No subgid entries found"
 
+      - name: Pre-create cache directories
+        run: |
+          # Create storage directories before cache restoration to avoid permission issues
+          sudo mkdir -p /mnt/podman/storage /mnt/podman/containers /mnt/tmp
+          
+          # Determine the actual user ID (GitHub Actions runners often use 1001)
+          RUNNER_UID=$(id -u)
+          RUNNER_GID=$(id -g)
+          echo "Pre-creating cache directories for user ID: $RUNNER_UID, group ID: $RUNNER_GID"
+          
+          # Set ownership to current user for cache restoration
+          sudo chown -R $RUNNER_UID:$RUNNER_GID /mnt/podman /mnt/tmp
+          sudo chmod -R u+rwx,g+rx /mnt/podman /mnt/tmp
+
       - name: Cache model-specific Podman storage
         uses: actions/cache@v4
         id: cache-model-storage
@@ -532,6 +546,20 @@ jobs:
           grep "$RUNNER_USER" /etc/subuid || echo "No subuid entries found"
           echo "Current subgid entries:"
           grep "$RUNNER_USER" /etc/subgid || echo "No subgid entries found"
+
+      - name: Pre-create cache directories
+        run: |
+          # Create storage directories before cache restoration to avoid permission issues
+          sudo mkdir -p /mnt/podman/storage /mnt/podman/containers /mnt/tmp
+          
+          # Determine the actual user ID (GitHub Actions runners often use 1001)
+          RUNNER_UID=$(id -u)
+          RUNNER_GID=$(id -g)
+          echo "Pre-creating cache directories for user ID: $RUNNER_UID, group ID: $RUNNER_GID"
+          
+          # Set ownership to current user for cache restoration
+          sudo chown -R $RUNNER_UID:$RUNNER_GID /mnt/podman /mnt/tmp
+          sudo chmod -R u+rwx,g+rx /mnt/podman /mnt/tmp
 
       - name: Cache model-specific Podman storage
         uses: actions/cache@v4
