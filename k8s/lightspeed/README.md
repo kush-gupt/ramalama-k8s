@@ -79,15 +79,21 @@ oc get applications -n openshift-gitops | grep lightspeed
 
 #### Option 2: Direct Kustomize Deployment
 
+Due to timing dependencies between operator installation and CRD creation, direct kustomize deployment requires two steps:
+
 ##### Deploy for Specific Model (Recommended)
 ```bash
-# Deploy for Qwen 3 4B model
+# Step 1: Install the operator (creates CRDs)
+oc apply -k k8s/lightspeed/base/operator-only
+
+# Step 2: Wait for operator to be ready
+oc wait --for=condition=Ready pod -l app.kubernetes.io/name=lightspeed-operator -n openshift-lightspeed --timeout=100s
+
+# Step 3: Apply the model configuration
 oc apply -k k8s/lightspeed/overlays/qwen3-4b
-
-# Deploy for Qwen 3 30B model  
+# OR
 oc apply -k k8s/lightspeed/overlays/qwen3-30b
-
-# Deploy for DeepSeek R1 model
+# OR  
 oc apply -k k8s/lightspeed/overlays/deepseek-r1-qwen3-8b
 ```
 
@@ -271,11 +277,10 @@ oc get pods -l app.kubernetes.io/name=ramalama -n ramalama
 # Deploy with OpenShift GitOps (single model - recommended)
 oc apply -f k8s/lightspeed/argocd/application-qwen3-4b.yaml
 
-# Or deploy specific model directly
+# Or deploy specific model directly (2-step process)
+oc apply -k k8s/lightspeed/base/operator-only
+oc wait --for=condition=Ready pod -l app.kubernetes.io/name=lightspeed-operator -n openshift-lightspeed --timeout=100s
 oc apply -k k8s/lightspeed/overlays/qwen3-4b
-
-# Or deploy with auto-discovery
-oc apply -k k8s/lightspeed/overlays/auto-discovery
 
 # Check GitOps applications
 oc get applications -n openshift-gitops | grep lightspeed
@@ -288,6 +293,7 @@ oc delete application openshift-lightspeed-qwen3-4b -n openshift-gitops
 
 # Or clean up direct deployment
 oc delete -k k8s/lightspeed/overlays/qwen3-4b
+oc delete -k k8s/lightspeed/base/operator-only
 ```
 
 ## 🛠️ Troubleshooting

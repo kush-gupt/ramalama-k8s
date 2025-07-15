@@ -268,11 +268,13 @@ oc get pods -n ramalama
 # Option 1: Deploy with OpenShift GitOps
 oc apply -f k8s/lightspeed/argocd/application-qwen3-4b.yaml
 
-# Option 2: Deploy directly with Kustomize (single model)
-oc apply -k k8s/lightspeed/overlays/qwen3-4b
+# Option 2: Deploy directly with Kustomize (two-step process)
+# Step 1: Install operator and create CRDs
+oc apply -k k8s/lightspeed/base/operator-only
+oc wait --for=condition=Ready pod -l app.kubernetes.io/name=lightspeed-operator -n openshift-lightspeed --timeout=100s
 
-# Option 3: Deploy with "auto-discovery" if you use a model hardcoded here
-oc apply -k k8s/lightspeed/overlays/auto-discovery
+# Step 2: Apply complete configuration
+oc apply -k k8s/lightspeed/overlays/qwen3-4b
 
 # Verify deployment in the openshift-lightspeed namespace
 oc get all -n openshift-lightspeed
@@ -308,14 +310,20 @@ Add new models with automatic Lightspeed integration:
   --model-file "/mnt/models/llama-7b.gguf/llama-7b.gguf" \
   --create-lightspeed-overlay
 
-# Deploy both the model and Lightspeed integration
+# Deploy the model first
 oc apply -k k8s/models/llama-7b
+
+# Deploy Lightspeed integration (two-step process)
+oc apply -k k8s/lightspeed/base/operator-only
+oc wait --for=condition=Ready pod -l app.kubernetes.io/name=lightspeed-operator -n openshift-lightspeed --timeout=300s
 oc apply -k k8s/lightspeed/overlays/llama-7b
 ```
 
 This automatically creates:
 - Model deployment configuration in the `ramalama` namespace
 - OpenShift Lightspeed overlay with automatic service discovery
+- Complete `olsconfig.yaml` for the model
+- README with deployment instructions
 - Proper service integration across the simplified namespace structure
 
 📚 **For detailed Lightspeed setup**, see [k8s/lightspeed/README.md](k8s/lightspeed/README.md)

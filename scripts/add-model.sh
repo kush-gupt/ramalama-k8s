@@ -372,23 +372,84 @@ metadata:
     argocd.argoproj.io/sync-wave: "2"
 
 resources:
-  - ../../base
+  - ../../base/operator-only
+  - olsconfig.yaml
 
 patches:
   - target:
-      kind: OLSConfig
-      name: cluster
+      kind: Secret
+      name: credentials
     patch: |-
-      - op: replace
-        path: /spec/llm/providers/0/url
-        value: http://{{MODEL_NAME_SAFE}}-ramalama-service.{{LIGHTSPEED_NAMESPACE}}.svc.cluster.local:8080/v1
-      - op: replace
-        path: /spec/llm/providers/0/models/0/name
-        value: default
+      - op: add
+        path: /metadata/labels/model
+        value: {{MODEL_NAME_SAFE}}
+      - op: add
+        path: /metadata/labels/environment
+        value: {{MODEL_NAME_SAFE}}
+  - target:
+      kind: Subscription
+      name: lightspeed-operator
+    patch: |-
+      - op: add
+        path: /metadata/labels/model
+        value: {{MODEL_NAME_SAFE}}
+      - op: add
+        path: /metadata/labels/environment
+        value: {{MODEL_NAME_SAFE}}
+EOF
+    fi
+}
 
-commonLabels:
-  model: {{MODEL_NAME_SAFE}}
-  environment: {{MODEL_NAME_SAFE}}
+# Function to create Lightspeed OLSConfig template if it doesn't exist
+create_lightspeed_olsconfig_template() {
+    local template_file="$TEMPLATES_DIR/lightspeed-olsconfig.template.yaml"
+    if [[ ! -f "$template_file" ]]; then
+        log_info "Creating Lightspeed OLSConfig template"
+        cat > "$template_file" << 'EOF'
+apiVersion: ols.openshift.io/v1alpha1
+kind: OLSConfig
+metadata:
+  name: cluster
+  namespace: openshift-lightspeed
+  labels:
+    app.kubernetes.io/created-by: lightspeed-operator
+    app.kubernetes.io/instance: olsconfig-sample
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: olsconfig
+    app.kubernetes.io/part-of: lightspeed-operator
+    model: {{MODEL_NAME_SAFE}}
+    environment: {{MODEL_NAME_SAFE}}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  llm:
+    providers:
+      - credentialsSecretRef:
+          name: credentials
+        models:
+          - name: default
+        name: ramalama
+        type: openai
+        url: http://{{MODEL_NAME_SAFE}}-ramalama-service.{{LIGHTSPEED_NAMESPACE}}.svc.cluster.local:8080/v1
+  ols:
+    conversationCache:
+      postgres:
+        credentialsSecret: lightspeed-postgres-secret
+        dbName: postgres
+        maxConnections: 2000
+        sharedBuffers: 256MB
+        user: postgres
+      type: postgres
+    defaultModel: default
+    defaultProvider: ramalama
+    deployment:
+      console:
+        replicas: 1
+      replicas: 1
+    introspectionEnabled: true
+    logLevel: INFO
+  olsDataCollector:
+    logLevel: INFO
 EOF
     fi
 }
@@ -422,6 +483,7 @@ create_containerfile_template
 create_k8s_template
 if [[ "$CREATE_LIGHTSPEED_OVERLAY" == "true" ]]; then
     create_lightspeed_template
+    create_lightspeed_olsconfig_template
 fi
 
 # Generate Containerfile
@@ -442,7 +504,81 @@ if [[ "$CREATE_LIGHTSPEED_OVERLAY" == "true" ]]; then
     LIGHTSPEED_OVERLAY_DIR="$REPO_ROOT/k8s/lightspeed/overlays/${MODEL_NAME_SAFE}"
     mkdir -p "$LIGHTSPEED_OVERLAY_DIR"
     LIGHTSPEED_KUSTOMIZATION_PATH="$LIGHTSPEED_OVERLAY_DIR/kustomization.yaml"
+    LIGHTSPEED_OLSCONFIG_PATH="$LIGHTSPEED_OVERLAY_DIR/olsconfig.yaml"
     substitute_template "$TEMPLATES_DIR/lightspeed-overlay.template.yaml" "$LIGHTSPEED_KUSTOMIZATION_PATH"
+    substitute_template "$TEMPLATES_DIR/lightspeed-olsconfig.template.yaml" "$LIGHTSPEED_OLSCONFIG_PATH"
+    
+    # Create README for the overlay
+    cat > "$LIGHTSPEED_OVERLAY_DIR/README.md" << EOF
+# OpenShift Lightspeed with ${MODEL_NAME}
+
+This overlay configures OpenShift Lightspeed to use the ${MODEL_NAME} model deployed in the \`ramalama\` namespace.
+
+## Prerequisites
+
+Ensure you have the ${MODEL_NAME} model running:
+\`\`\`bash
+oc get pods -l model=${MODEL_NAME_SAFE} -n ramalama
+\`\`\`
+
+If not deployed, deploy it first:
+\`\`\`bash
+oc apply -f ../../models/ramalama-namespace.yaml
+oc apply -k ../../models/${MODEL_NAME_SAFE}
+\`\`\`
+
+## Deployment
+
+Due to the timing dependency between operator installation and CRD creation, deployment requires two steps:
+
+### Step 1: Install the OpenShift Lightspeed Operator
+\`\`\`bash
+oc apply -k ../../base/operator-only
+\`\`\`
+
+Wait for the operator to be ready (this creates the required CRDs):
+\`\`\`bash
+oc wait --for=condition=Ready pod -l app.kubernetes.io/name=lightspeed-operator -n openshift-lightspeed --timeout=300s
+\`\`\`
+
+### Step 2: Apply the Complete Configuration
+\`\`\`bash
+oc apply -k .
+\`\`\`
+
+## Verification
+
+Check that all components are running:
+\`\`\`bash
+# Check operator
+oc get pods -l app.kubernetes.io/name=lightspeed-operator -n openshift-lightspeed
+
+# Check lightspeed components
+oc get pods -l app.kubernetes.io/name=lightspeed-app-server -n openshift-lightspeed
+
+# Check OLS configuration
+oc get olsconfig cluster -n openshift-lightspeed
+\`\`\`
+
+## Usage
+
+1. Access the OpenShift web console
+2. Look for the Lightspeed assistant icon in the navigation
+3. Start asking questions about your cluster!
+
+Example questions:
+- "How do I create a deployment?"
+- "Show me pods that are not running"
+- "Generate a service YAML for my application"
+
+## Cleanup
+
+To remove the deployment:
+\`\`\`bash
+oc delete -k .
+oc delete -k ../../base/operator-only
+\`\`\`
+EOF
 fi
 
 # Note: With the new modular workflow system, no manual workflow updates are needed!
@@ -483,6 +619,8 @@ echo "  - k8s/models/${MODEL_NAME_SAFE}/kustomization.yaml"
 echo "  - models/${MODEL_NAME_SAFE}.conf"
 if [[ "$CREATE_LIGHTSPEED_OVERLAY" == "true" ]]; then
     echo "  - k8s/lightspeed/overlays/${MODEL_NAME_SAFE}/kustomization.yaml"
+    echo "  - k8s/lightspeed/overlays/${MODEL_NAME_SAFE}/olsconfig.yaml"
+    echo "  - k8s/lightspeed/overlays/${MODEL_NAME_SAFE}/README.md"
 fi
 echo "  - NOTE: Using GitOps-compatible Kustomize structure!"
 echo
@@ -495,8 +633,12 @@ echo "4. Build and test locally if needed:"
 echo
 if [[ "$CREATE_LIGHTSPEED_OVERLAY" == "true" ]]; then
     echo -e "${BLUE}OpenShift Lightspeed integration:${NC}"
-    echo "5. Deploy the Lightspeed overlay:"
-    echo -e "${YELLOW}kubectl apply -k k8s/lightspeed/overlays/${MODEL_NAME_SAFE}${NC}"
+    echo "5. Deploy the Lightspeed overlay (two-step process):"
+    echo -e "${YELLOW}# Step 1: Install operator and create CRDs${NC}"
+    echo -e "${YELLOW}oc apply -k k8s/lightspeed/base/operator-only${NC}"
+    echo -e "${YELLOW}oc wait --for=condition=Ready pod -l app.kubernetes.io/name=lightspeed-operator -n openshift-lightspeed --timeout=300s${NC}"
+    echo -e "${YELLOW}# Step 2: Apply complete configuration${NC}"
+    echo -e "${YELLOW}oc apply -k k8s/lightspeed/overlays/${MODEL_NAME_SAFE}${NC}"
     echo
 fi
 echo -e "${YELLOW}Local build example:${NC}"
