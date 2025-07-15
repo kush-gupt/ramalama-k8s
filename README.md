@@ -79,11 +79,11 @@ cd ramalama-k8s
 
 ### 2. Choose Your Adventure
 
-**🚀 Just Want to Try It?** → [Jump to Quick Deploy](#quick-deploy)
+**🚀 Just Want to Try It?** → [Jump to Quick Deploy](#-quick-deploy)
 
-**🏗️ Want to Build Your Own?** → [Continue to Build Guide](#building-your-own-images)
+**🏗️ Want to Build Your Own?** → [Continue to Build Guide](#%EF%B8%8F-building-your-own-images)
 
-**☸️ Ready for "Production"?** → [Check the Kubernetes Guide](#kubernetes-deployment)
+**☸️ Ready for "Production"?** → [Check the Kubernetes Guide](#%EF%B8%8F-kubernetes-deployment)
 
 ## ⚡ Quick Deploy
 
