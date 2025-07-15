@@ -1,40 +1,40 @@
-# 🚀 Ramalama Kubernetes - Easy LLM Deployment Made Simple
+# <rh-icon name="rocket"></rh-icon> Ramalama Kubernetes - Easy LLM Deployment Made Simple
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 
 > **Deploy powerful Language Models (LLMs) in Kubernetes with just a few commands!**
 
-## 🎯 What is this?
+## <rh-icon name="target"></rh-icon> What is this?
 
 Ramalama with Kubernetes makes it incredibly easy to run your own ChatGPT-like AI models in Kubernetes or OpenShift. Whether you're a developer, DevOps engineer, or AI enthusiast, this project helps you:
 
-- 🏃‍♂️ **Get started quickly** - Deploy AI models in minutes, not hours
-- 🔧 **Use familiar tools** - Works with Docker, Kubernetes, and standard GitOps workflows  
-- 🎛️ **Stay in control** - Run models on your own infrastructure, no external API calls needed
-- 📦 **Choose your model** - Easy support for popular models like Qwen, Llama, Mistral, and more
-- 🔄 **Scale effortlessly** - Built-in CI/CD, multi-environment support, and GitOps compatibility
-- 🤖 **AI-Powered Assistance** - Integrate with OpenShift Lightspeed for intelligent cluster management
+- <rh-icon name="running"></rh-icon> **Get started quickly** - Deploy AI models in minutes, not hours
+- <rh-icon name="wrench"></rh-icon> **Use familiar tools** - Works with Docker, Kubernetes, and standard GitOps workflows  
+- <rh-icon name="control-panel"></rh-icon> **Stay in control** - Run models on your own infrastructure, no external API calls needed
+- <rh-icon name="package"></rh-icon> **Choose your model** - Easy support for popular models like Qwen, Llama, Mistral, and more
+- <rh-icon name="arrows-sync"></rh-icon> **Scale effortlessly** - Built-in CI/CD, multi-environment support, and GitOps compatibility
+- <rh-icon name="robot"></rh-icon> **AI-Powered Assistance** - Integrate with OpenShift Lightspeed for intelligent cluster management
 
-## 🌟 Key Features
+## <rh-icon name="star"></rh-icon> Key Features
 
-- **🐳 Containerized Models**: Pre-built container images with popular LLMs
-- **☸️ Kubernetes Native**: Full Kubernetes and OpenShift support with GitOps
-- **🔄 Automated CI/CD**: GitHub Actions pipeline for building and deploying models
-- **🎨 Multiple Models**: Support for Qwen, Llama, Mistral, and custom models
-- **📊 Production Ready**: Security contexts, resource management, and monitoring
-- **🛠️ Easy Management**: Simple scripts to add, remove, and manage models
-- **🤖 OpenShift Lightspeed**: Built-in integration with Red Hat's AI assistant
-- **🏗️ Simplified Architecture**: All models deploy to a single `ramalama` namespace
+- **<rh-icon name="container"></rh-icon> Containerized Models**: Pre-built container images with popular LLMs
+- **<rh-icon name="kubernetes"></rh-icon> Kubernetes Native**: Full Kubernetes and OpenShift support with GitOps
+- **<rh-icon name="arrows-sync"></rh-icon> Automated CI/CD**: GitHub Actions pipeline for building and deploying models
+- **<rh-icon name="color-palette"></rh-icon> Multiple Models**: Support for Qwen, Llama, Mistral, and custom models
+- **<rh-icon name="chart-bar"></rh-icon> Production Ready**: Security contexts, resource management, and monitoring
+- **<rh-icon name="tools"></rh-icon> Easy Management**: Simple scripts to add, remove, and manage models
+- **<rh-icon name="robot"></rh-icon> OpenShift Lightspeed**: Built-in integration with Red Hat's AI assistant
+- **<rh-icon name="building"></rh-icon> Simplified Architecture**: All models deploy to a single `ramalama` namespace
 
-## 🏗️ How It Works
+## <rh-icon name="building"></rh-icon> How It Works
 
 ```mermaid
 graph LR
-    A[🔧 Pick a Model] --> B[🐳 Build Container]
-    B --> C[☸️ Deploy to K8s]
-    C --> D[🌐 Use API]
-    D --> E[🤖 AI Assistant]
+    A[<rh-icon name="wrench"></rh-icon> Pick a Model] --> B[<rh-icon name="container"></rh-icon> Build Container]
+    B --> C[<rh-icon name="kubernetes"></rh-icon> Deploy to K8s]
+    C --> D[<rh-icon name="globe"></rh-icon> Use API]
+    D --> E[<rh-icon name="robot"></rh-icon> AI Assistant]
     
     style A fill:#e1f5fe
     style B fill:#f3e5f5
@@ -55,17 +55,17 @@ Really!
 
 Seriously, not that complicated!
 
-## 📋 Prerequisites
+## <rh-icon name="clipboard-check"></rh-icon> Prerequisites
 
 Before you begin, make sure you have:
 
-- **🐳 Container Runtime**: [Podman](https://podman.io/) 5+ (recommended) or Docker if you insist
-- **☸️ Kubernetes**: A running cluster (local or cloud)
-- **🔧 kubectl or oc**: [Kubernetes CLI](https://kubernetes.io/docs/tasks/tools/) or `oc` configured
-- **🐙 Git**: For cloning and managing the repository
-- **💾 Storage**: At least 4GB+ free space for model images
+- **<rh-icon name="container"></rh-icon> Container Runtime**: [Podman](https://podman.io/) 5+ (recommended) or Docker if you insist
+- **<rh-icon name="kubernetes"></rh-icon> Kubernetes**: A running cluster (local or cloud)
+- **<rh-icon name="wrench"></rh-icon> kubectl or oc**: [Kubernetes CLI](https://kubernetes.io/docs/tasks/tools/) or `oc` configured
+- **<rh-icon name="git"></rh-icon> Git**: For cloning and managing the repository
+- **<rh-icon name="storage"></rh-icon> Storage**: At least 4GB+ free space for model images
 
-### 🖥️ System Requirements
+### <rh-icon name="desktop"></rh-icon> System Requirements
 
 | Component | Minimum | Recommended |
 |-----------|---------|-------------|
@@ -74,7 +74,7 @@ Before you begin, make sure you have:
 | **Storage** | 10GB | 20GB+ |
 | **Network** | Stable internet | High-speed connection |
 
-## 🚀 Quick Start
+## <rh-icon name="rocket"></rh-icon> Quick Start
 
 ### 1. Clone the Repository
 
@@ -85,13 +85,13 @@ cd ramalama-k8s
 
 ### 2. Choose Your Adventure
 
-**🚀 Just Want to Try It?** → [Jump to Quick Deploy](#-quick-deploy)
+**<rh-icon name="rocket"></rh-icon> Just Want to Try It?** → [Jump to Quick Deploy](#-quick-deploy)
 
-**🏗️ Want to Build Your Own?** → [Continue to Build Guide](#%EF%B8%8F-building-your-own-images)
+**<rh-icon name="building"></rh-icon> Want to Build Your Own?** → [Continue to Build Guide](#%EF%B8%8F-building-your-own-images)
 
-**☸️ Ready for "Production"?** → [Check the Kubernetes Guide](#%EF%B8%8F-kubernetes-deployment)
+**<rh-icon name="kubernetes"></rh-icon> Ready for "Production"?** → [Check the Kubernetes Guide](#%EF%B8%8F-kubernetes-deployment)
 
-## ⚡ Quick Deploy
+## <rh-icon name="lightning"></rh-icon> Quick Deploy
 
 Deploy a pre-built model in seconds:
 
@@ -109,12 +109,12 @@ oc get pods -l model=qwen3-4b -n ramalama
 oc port-forward -n ramalama svc/qwen3-4b-ramalama-service 8080:8080
 ```
 
-🎉 **That's it!** Your model is now running at `http://localhost:8080`
+<rh-icon name="celebration"></rh-icon> **That's it!** Your model is now running at `http://localhost:8080`
 
 > [!NOTE]  
 > **Simplified Namespace Structure**: All models deploy to the `ramalama` namespace for easier management and service discovery. This prevents namespace conflicts and just simplifies OpenShift Lightspeed integration.
 
-### 🧪 Test Your Model
+### <rh-icon name="test-tube"></rh-icon> Test Your Model
 
 ```bash
 # Test with a simple chat completion
@@ -129,7 +129,7 @@ curl -X POST http://localhost:8080/v1/chat/completions \
   }'
 ```
 
-## 🛠️ Building Your Own Images
+## <rh-icon name="tools"></rh-icon> Building Your Own Images
 
 Want to use a different model or customize the setup? Here's how:
 
@@ -152,7 +152,7 @@ podman build \
   .
 ```
 
-⏱️ **This takes 10-15 minutes** - perfect time for a coffee break! ☕
+<rh-icon name="clock"></rh-icon> **This takes 10-15 minutes** - perfect time for a coffee break! <rh-icon name="coffee"></rh-icon>
 
 ### Step 3: Prepare Your Model
 
@@ -192,11 +192,11 @@ podman run -it --rm -p 8080:8080 \
   --host 0.0.0.0
 ```
 
-🎉 **Success!** Your model is now running at `http://localhost:8080`
+<rh-icon name="celebration"></rh-icon> **Success!** Your model is now running at `http://localhost:8080`
 
-## ☸️ Kubernetes Deployment
+## <rh-icon name="kubernetes"></rh-icon> Kubernetes Deployment
 
-### 🎯 Model-Specific Deployment
+### <rh-icon name="target"></rh-icon> Model-Specific Deployment
 
 Deploy individual models using their specific directories:
 
@@ -214,7 +214,7 @@ kubectl apply -k k8s/models/deepseek-r1-qwen3-8b
 kubectl get all -l app.kubernetes.io/name=ramalama -n ramalama
 ```
 
-### 🌍 Environment-Specific Deployment
+### <rh-icon name="globe"></rh-icon> Environment-Specific Deployment
 
 For development and testing with environment-specific configurations:
 
@@ -232,7 +232,7 @@ kubectl get pods -n ramalama
 > [!TIP]  
 > **Environment overlays** include base model deployment configurations and are perfect for testing different resource allocations and settings.
 
-### 🔄 GitOps with OpenShift GitOps
+### <rh-icon name="arrows-sync"></rh-icon> GitOps with OpenShift GitOps
 
 For automated deployments with environment-specific configurations:
 
@@ -253,13 +253,13 @@ oc get applications -n openshift-gitops
 > [!IMPORTANT]  
 > **GitOps Deployment**: Environment overlays (`k8s/overlays/dev` and `k8s/overlays/production`) are designed for standalone testing and development. For anything close to production GitOps, use the model-specific deployments with ArgoCD Applications or ApplicationSets.
 
-## 🤖 OpenShift Lightspeed Integration
+## <rh-icon name="robot"></rh-icon> OpenShift Lightspeed Integration
 
 Get AI-powered assistance for your OpenShift cluster management! Deploy OpenShift Lightspeed with automatic integration to your ramalama models.
 
 **All OpenShift Lightspeed resources deploy to the `openshift-lightspeed` namespace** for proper isolation and management.
 
-### ⚡ Quick Deploy Lightspeed
+### <rh-icon name="lightning"></rh-icon> Quick Deploy Lightspeed
 
 ```bash
 # Ensure you have at least one model running in the ramalama namespace first, else create it!
@@ -280,16 +280,16 @@ oc apply -k k8s/lightspeed/overlays/qwen3-4b
 oc get all -n openshift-lightspeed
 ```
 
-### 🌟 Features
+### <rh-icon name="star"></rh-icon> Features
 
-- **🧠 Natural Language Queries**: Ask questions about your cluster in plain English
-- **📝 YAML Generation**: Get help creating Kubernetes manifests
-- **🔧 Troubleshooting**: AI-powered assistance for debugging cluster issues
-- **🔍 Resource Investigation**: Understand what's happening in your cluster
-- **🔄 GitOps Ready**: Fully automated deployment with ArgoCD
-- **🔗 Automatic Service Discovery**: Should Seamlessly connect to models in the `ramalama` namespace
+- **<rh-icon name="brain"></rh-icon> Natural Language Queries**: Ask questions about your cluster in plain English
+- **<rh-icon name="document"></rh-icon> YAML Generation**: Get help creating Kubernetes manifests
+- **<rh-icon name="wrench"></rh-icon> Troubleshooting**: AI-powered assistance for debugging cluster issues
+- **<rh-icon name="search"></rh-icon> Resource Investigation**: Understand what's happening in your cluster
+- **<rh-icon name="arrows-sync"></rh-icon> GitOps Ready**: Fully automated deployment with ArgoCD
+- **<rh-icon name="network"></rh-icon> Automatic Service Discovery**: Should Seamlessly connect to models in the `ramalama` namespace
 
-### 💬 Example Usage
+### <rh-icon name="chat"></rh-icon> Example Usage
 
 After deployment, you can ask OpenShift Lightspeed questions like:
 - *"How do I troubleshoot a pod that won't start?"*
@@ -297,7 +297,7 @@ After deployment, you can ask OpenShift Lightspeed questions like:
 - *"Why is my service not accessible?"*
 - *"Show me how to configure resource limits"*
 
-### 🔧 Enhanced Model Management with Lightspeed
+### <rh-icon name="wrench"></rh-icon> Enhanced Model Management with Lightspeed
 
 Add new models with automatic Lightspeed integration:
 
@@ -326,9 +326,9 @@ This automatically creates:
 - README with deployment instructions
 - Proper service integration across the simplified namespace structure
 
-📚 **For detailed Lightspeed setup**, see [k8s/lightspeed/README.md](k8s/lightspeed/README.md)
+<rh-icon name="book"></rh-icon> **For detailed Lightspeed setup**, see [k8s/lightspeed/README.md](k8s/lightspeed/README.md)
 
-## 🎛️ Model Management
+## <rh-icon name="control-panel"></rh-icon> Model Management
 
 ### Adding New Models
 
@@ -360,50 +360,50 @@ Our model management system makes it super easy to add new models:
 ./scripts/generate-from-config.py
 ```
 
-📚 **For detailed model management**, see [MODELS.md](MODELS.md)
+<rh-icon name="book"></rh-icon> **For detailed model management**, see [MODELS.md](MODELS.md)
 
-## 📁 Repository Structure
+## <rh-icon name="folder"></rh-icon> Repository Structure
 
 ```
 ramalama-k8s/
-├── 📁 containerfiles/          # Container build files
-├── 📁 k8s/                     # Kubernetes manifests
-│   ├── 📁 base/                # Base configurations  
-│   ├── 📁 overlays/            # Environment-specific settings
-│   ├── 📁 models/              # Model configurations
-│   │   ├── 📄 ramalama-namespace.yaml  # Shared namespace
-│   │   └── 📁 */               # Individual model configs
-│   ├── 📁 lightspeed/          # OpenShift Lightspeed integration
-│   └── 📁 argocd/              # GitOps examples
-├── 📁 scripts/                 # Management scripts
-├── 📁 models/                  # Model configurations
-├── 📄 README.md                # This file
-├── 📄 MODELS.md                # Model management guide
-└── 📄 LICENSE                  # MIT license
+├── <rh-icon name="folder"></rh-icon> containerfiles/          # Container build files
+├── <rh-icon name="folder"></rh-icon> k8s/                     # Kubernetes manifests
+│   ├── <rh-icon name="folder"></rh-icon> base/                # Base configurations  
+│   ├── <rh-icon name="folder"></rh-icon> overlays/            # Environment-specific settings
+│   ├── <rh-icon name="folder"></rh-icon> models/              # Model configurations
+│   │   ├── <rh-icon name="document"></rh-icon> ramalama-namespace.yaml  # Shared namespace
+│   │   └── <rh-icon name="folder"></rh-icon> */               # Individual model configs
+│   ├── <rh-icon name="folder"></rh-icon> lightspeed/          # OpenShift Lightspeed integration
+│   └── <rh-icon name="folder"></rh-icon> argocd/              # GitOps examples
+├── <rh-icon name="folder"></rh-icon> scripts/                 # Management scripts
+├── <rh-icon name="folder"></rh-icon> models/                  # Model configurations
+├── <rh-icon name="document"></rh-icon> README.md                # This file
+├── <rh-icon name="document"></rh-icon> MODELS.md                # Model management guide
+└── <rh-icon name="document"></rh-icon> LICENSE                  # MIT license
 ```
 
-## 🔧 Available Models
+## <rh-icon name="wrench"></rh-icon> Available Models
 
 | Model | Size | Description | Status |
 |-------|------|-------------|--------|
-| **Qwen 1.7B** | ~1GB | Fast, lightweight model | ✅ Ready |
-| **Qwen 4B** | ~2GB | Balanced performance | ✅ Ready |
-| **Qwen 30B** | ~16GB | High-performance model | ✅ Ready |
-| **DeepSeek R1** | ~4GB | Reasoning-focused model | ✅ Ready |
-| **Custom** | Variable | Add your own! | 🔧 DIY |
+| **Qwen 1.7B** | ~1GB | Fast, lightweight model | <rh-icon name="check-circle"></rh-icon> Ready |
+| **Qwen 4B** | ~2GB | Balanced performance | <rh-icon name="check-circle"></rh-icon> Ready |
+| **Qwen 30B** | ~16GB | High-performance model | <rh-icon name="check-circle"></rh-icon> Ready |
+| **DeepSeek R1** | ~4GB | Reasoning-focused model | <rh-icon name="check-circle"></rh-icon> Ready |
+| **Custom** | Variable | Add your own! | <rh-icon name="wrench"></rh-icon> DIY |
 
-## 🤝 Contributing
+## <rh-icon name="handshake"></rh-icon> Contributing
 
 We would love contributions! Here's how you can help:
 
-### 🚀 Quick Contributions
+### <rh-icon name="rocket"></rh-icon> Quick Contributions
 
-- **🐛 Report bugs** - Found something broken? Let me know!
-- **💡 Suggest features** - Have ideas? Would love to hear them!
-- **📚 Improve docs** - Help make things clearer for everyone
-- **🧪 Test models** - Try new models and share your results
+- **<rh-icon name="bug"></rh-icon> Report bugs** - Found something broken? Let me know!
+- **<rh-icon name="lightbulb"></rh-icon> Suggest features** - Have ideas? Would love to hear them!
+- **<rh-icon name="book"></rh-icon> Improve docs** - Help make things clearer for everyone
+- **<rh-icon name="test-tube"></rh-icon> Test models** - Try new models and share your results
 
-### 🏗️ Development
+### <rh-icon name="building"></rh-icon> Development
 
 ```bash
 # 1. Fork the repository
@@ -418,26 +418,26 @@ git checkout -b feature/amazing-feature
 # 6. Submit a pull request
 ```
 
-### 📋 Contribution Guidelines
+### <rh-icon name="clipboard-check"></rh-icon> Contribution Guidelines
 
 - Follow existing code style
 - Test your changes
 - Update documentation
 - Add examples for new features
-- Be friendly and helpful! 😊
+- Be friendly and helpful! <rh-icon name="smile"></rh-icon>
 
-### 🚀 Use Cases
+### <rh-icon name="rocket"></rh-icon> Use Cases
 
-- **🏢 Enterprise**: Internal AI assistants and chatbots
-- **🎓 Education**: Teaching AI and machine learning
-- **🔬 Research**: Experimenting with different models
-- **🏠 Personal**: Your own private AI assistant
+- **<rh-icon name="building"></rh-icon> Enterprise**: Internal AI assistants and chatbots
+- **<rh-icon name="graduation-cap"></rh-icon> Education**: Teaching AI and machine learning
+- **<rh-icon name="microscope"></rh-icon> Research**: Experimenting with different models
+- **<rh-icon name="home"></rh-icon> Personal**: Your own private AI assistant
 
-## 📜 License
+## <rh-icon name="document"></rh-icon> License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## <rh-icon name="heart"></rh-icon> Acknowledgments
 
 - **[Ramalama](https://ramalama.ai)** - For making LLM deployment simple
 - **[llama.cpp](https://github.com/ggerganov/llama.cpp)** - For efficient model inference
@@ -446,12 +446,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 🎉 Ready to Get Started?
+## <rh-icon name="celebration"></rh-icon> Ready to Get Started?
 
-1. **⭐ Star this repository** if you find it useful
-2. **🍴 Fork it** to make it your own
-3. **📥 Clone it** and start deploying models
-4. **🚀 Deploy your first model** in minutes!
+1. **<rh-icon name="star"></rh-icon> Star this repository** if you find it useful
+2. **<rh-icon name="fork"></rh-icon> Fork it** to make it your own
+3. **<rh-icon name="download"></rh-icon> Clone it** and start deploying models
+4. **<rh-icon name="rocket"></rh-icon> Deploy your first model** in minutes!
 
 **Questions?** Don't hesitate to ask in our [GitHub Discussions](https://github.com/kush-gupt/ramalama-k8s/discussions)!
 
