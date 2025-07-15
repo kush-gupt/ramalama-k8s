@@ -82,7 +82,7 @@ oc apply -f k8s/models/ramalama-namespace.yaml
 oc apply -k k8s/models/qwen3-1b
 
 # ✅ Verify deployment
-oc get pods -l model=qwen3-4b -n ramalama
+oc get pods -l model=qwen3-1b -n ramalama
 ```
 
 #### **Environment-Based Deployment**
@@ -98,13 +98,13 @@ oc apply -k k8s/overlays/production
 
 ```bash
 # 🔗 Port forward to access the API
-oc port-forward -n ramalama svc/qwen3-4b-ramalama-service 8080:8080
+oc port-forward -n ramalama svc/qwen3-1b-ramalama-service 8080:8080
 
 # 💬 Test the chat API
 curl -X POST http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "qwen3-4b-model",
+    "model": "default",
     "messages": [{"role": "user", "content": "Hello! How are you?"}],
     "temperature": 0.7
   }'
