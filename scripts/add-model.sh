@@ -358,6 +358,9 @@ EOF
 }
 
 # Function to create Lightspeed overlay template if it doesn't exist
+# Note: ArgoCD ApplicationSet automatically discovers lightspeed overlays 
+# and applies Project resource exclusions since OpenShift Lightspeed operator
+# creates the openshift-lightspeed namespace automatically
 create_lightspeed_template() {
     local template_file="$TEMPLATES_DIR/lightspeed-overlay.template.yaml"
     if [[ ! -f "$template_file" ]]; then
@@ -621,6 +624,7 @@ if [[ "$CREATE_LIGHTSPEED_OVERLAY" == "true" ]]; then
     echo "  - k8s/lightspeed/overlays/${MODEL_NAME_SAFE}/kustomization.yaml"
     echo "  - k8s/lightspeed/overlays/${MODEL_NAME_SAFE}/olsconfig.yaml"
     echo "  - k8s/lightspeed/overlays/${MODEL_NAME_SAFE}/README.md"
+    echo "  - NOTE: ArgoCD ApplicationSet will auto-discover this overlay!"
 fi
 echo "  - NOTE: Using GitOps-compatible Kustomize structure!"
 echo

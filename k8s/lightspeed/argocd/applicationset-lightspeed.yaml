@@ -36,6 +36,11 @@ spec:
         repoURL: https://github.com/kush-gupt/ramalama-k8s.git
         targetRevision: HEAD
         path: '{{path}}'
+        kustomize:
+          # Exclude Project resources since they're created with the operator
+          exclusions:
+            - apiGroups: ["project.openshift.io"]
+              kinds: ["Project"]
           
       destination:
         server: https://kubernetes.default.svc
@@ -52,6 +57,7 @@ spec:
           - PruneLast=true
           - RespectIgnoreDifferences=true
           - ServerSideApply=true
+          - SkipDryRunOnMissingResource=true
         retry:
           limit: 5
           backoff:
@@ -73,9 +79,7 @@ spec:
         - /data
       - group: "project.openshift.io"
         kind: Project
-        jsonPointers:
-        - /metadata/annotations
-        - /metadata/labels
+        # Ignore all differences for Project since it's pre-created with OLS
         
       info:
       - name: 'Component:'
