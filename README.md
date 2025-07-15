@@ -25,6 +25,7 @@ Ramalama with Kubernetes makes it incredibly easy to run your own ChatGPT-like A
 - **📊 Production Ready**: Security contexts, resource management, and monitoring
 - **🛠️ Easy Management**: Simple scripts to add, remove, and manage models
 - **🤖 OpenShift Lightspeed**: Built-in integration with Red Hat's AI assistant
+- **🏗️ Simplified Architecture**: All models deploy to a single `ramalama` namespace
 
 ## 🏗️ How It Works
 
@@ -95,17 +96,23 @@ cd ramalama-k8s
 Deploy a pre-built model in seconds:
 
 ```bash
+# Create the ramalama namespace first
+oc apply -f k8s/models/ramalama-namespace.yaml
+
 # Deploy Qwen 4B model to your cluster
-kubectl apply -k k8s/models/qwen3-4b
+oc apply -k k8s/models/qwen3-4b
 
 # Check if it's running
-kubectl get pods -l model=qwen3-4b
+oc get pods -l model=qwen3-4b -n ramalama
 
 # Access the API (when pod is ready)
-kubectl port-forward svc/qwen3-4b-ramalama-service 8080:8080
+oc port-forward -n ramalama svc/qwen3-4b-ramalama-service 8080:8080
 ```
 
 🎉 **That's it!** Your model is now running at `http://localhost:8080`
+
+> [!NOTE]  
+> **Simplified Namespace Structure**: All models deploy to the `ramalama` namespace for easier management and service discovery. This prevents namespace conflicts and just simplifies OpenShift Lightspeed integration.
 
 ### 🧪 Test Your Model
 
@@ -194,12 +201,36 @@ podman run -it --rm -p 8080:8080 \
 Deploy individual models using their specific directories:
 
 ```bash
-# Deploy specific models
+# Create the ramalama project first
+oc apply -f k8s/models/ramalama-namespace.yaml
+
+# Deploy specific models (all to the ramalama namespace)
 kubectl apply -k k8s/models/qwen3-1b
 kubectl apply -k k8s/models/qwen3-4b
 kubectl apply -k k8s/models/qwen3-30b
 kubectl apply -k k8s/models/deepseek-r1-qwen3-8b
+
+# Check deployments in the ramalama namespace
+kubectl get all -l app.kubernetes.io/name=ramalama -n ramalama
 ```
+
+### 🌍 Environment-Specific Deployment
+
+For development and testing with environment-specific configurations:
+
+```bash
+# Development environment (includes namespace creation)
+kubectl apply -k k8s/overlays/dev
+
+# Production environment (includes namespace creation)
+kubectl apply -k k8s/overlays/production
+
+# Check deployments
+kubectl get pods -n ramalama
+```
+
+> [!TIP]  
+> **Environment overlays** include base model deployment configurations and are perfect for testing different resource allocations and settings.
 
 ### 🔄 GitOps with OpenShift GitOps
 
@@ -218,8 +249,9 @@ oc apply -f k8s/argocd/applicationset-example.yaml
 # Monitor deployments
 oc get applications -n openshift-gitops
 ```
+
 > [!IMPORTANT]  
-> Environment overlays (`k8s/overlays/dev` and `k8s/overlays/production`) are designed to work with OpenShift GitOps kustomize overlay feature, not standalone kubectl deployments. They are applied automatically when using the ApplicationSet.
+> **GitOps Deployment**: Environment overlays (`k8s/overlays/dev` and `k8s/overlays/production`) are designed for standalone testing and development. For anything close to production GitOps, use the model-specific deployments with ArgoCD Applications or ApplicationSets.
 
 ## 🤖 OpenShift Lightspeed Integration
 
@@ -230,13 +262,16 @@ Get AI-powered assistance for your OpenShift cluster management! Deploy OpenShif
 ### ⚡ Quick Deploy Lightspeed
 
 ```bash
-# Option 1: Deploy with OpenShift GitOps if installed (single model)
+# Ensure you have at least one model running in the ramalama namespace first, else create it!
+oc get pods -n ramalama
+
+# Option 1: Deploy with OpenShift GitOps
 oc apply -f k8s/lightspeed/argocd/application-qwen3-4b.yaml
 
 # Option 2: Deploy directly with Kustomize (single model)
 oc apply -k k8s/lightspeed/overlays/qwen3-4b
 
-# Option 3: Deploy with auto-discovery
+# Option 3: Deploy with "auto-discovery" if you use a model hardcoded here
 oc apply -k k8s/lightspeed/overlays/auto-discovery
 
 # Verify deployment in the openshift-lightspeed namespace
@@ -250,6 +285,7 @@ oc get all -n openshift-lightspeed
 - **🔧 Troubleshooting**: AI-powered assistance for debugging cluster issues
 - **🔍 Resource Investigation**: Understand what's happening in your cluster
 - **🔄 GitOps Ready**: Fully automated deployment with ArgoCD
+- **🔗 Automatic Service Discovery**: Should Seamlessly connect to models in the `ramalama` namespace
 
 ### 💬 Example Usage
 
@@ -272,7 +308,7 @@ Add new models with automatic Lightspeed integration:
   --model-file "/mnt/models/llama-7b.gguf/llama-7b.gguf" \
   --create-lightspeed-overlay
 
-# Deploy both the model and Lightspeed (all models deploy to 'ramalama' namespace)
+# Deploy both the model and Lightspeed integration
 oc apply -k k8s/models/llama-7b
 oc apply -k k8s/lightspeed/overlays/llama-7b
 ```
@@ -280,7 +316,7 @@ oc apply -k k8s/lightspeed/overlays/llama-7b
 This automatically creates:
 - Model deployment configuration in the `ramalama` namespace
 - OpenShift Lightspeed overlay with automatic service discovery
-- Proper service discovery and integration across simplified namespace structure
+- Proper service integration across the simplified namespace structure
 
 📚 **For detailed Lightspeed setup**, see [k8s/lightspeed/README.md](k8s/lightspeed/README.md)
 
@@ -324,9 +360,11 @@ Our model management system makes it super easy to add new models:
 ramalama-k8s/
 ├── 📁 containerfiles/          # Container build files
 ├── 📁 k8s/                     # Kubernetes manifests
-│   ├── 📁 base/                # Base configurations
+│   ├── 📁 base/                # Base configurations  
 │   ├── 📁 overlays/            # Environment-specific settings
 │   ├── 📁 models/              # Model configurations
+│   │   ├── 📄 ramalama-namespace.yaml  # Shared namespace
+│   │   └── 📁 */               # Individual model configs
 │   ├── 📁 lightspeed/          # OpenShift Lightspeed integration
 │   └── 📁 argocd/              # GitOps examples
 ├── 📁 scripts/                 # Management scripts
@@ -379,7 +417,6 @@ git checkout -b feature/amazing-feature
 - Update documentation
 - Add examples for new features
 - Be friendly and helpful! 😊
-
 
 ### 🚀 Use Cases
 

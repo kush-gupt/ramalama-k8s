@@ -43,8 +43,9 @@ oc get pods -n openshift-gitops
 # Deploy all ramalama models across environments
 oc apply -f k8s/argocd/applicationset-example.yaml
 
-# Monitor deployment
+# Monitor deployment (all models go to ramalama namespace)
 oc get applications -n openshift-gitops -w
+oc get pods -n ramalama -w
 ```
 
 ### Option B: Deploy Single Model
@@ -55,28 +56,63 @@ oc apply -f k8s/argocd/application-example.yaml
 
 # Check status
 oc get application ramalama-qwen-4b-dev -n openshift-gitops
+oc get pods -l model=qwen3-4b -n ramalama
+```
+
+### Option C: Deploy Environment-Specific Configuration
+
+```bash
+# For testing with development overlay
+oc apply -f - <<EOF
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ramalama-dev-environment
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/kush-gupt/ramalama-k8s.git
+    targetRevision: HEAD
+    path: k8s/overlays/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ramalama
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+EOF
 ```
 
 ## Step 3: Deploy OpenShift Lightspeed
 
-### Option A: All Lightspeed Configurations (ApplicationSet)
-
-```bash
-# Deploy Lightspeed for all models
-oc apply -f k8s/lightspeed/argocd/applicationset-lightspeed.yaml
-
-# Monitor Lightspeed deployment
-oc get applications -n openshift-gitops | grep lightspeed
-```
-
-### Option B: Single Lightspeed Configuration
+### Option A: Single Lightspeed Configuration (Recommended)
 
 ```bash
 # Deploy Lightspeed for specific model
 oc apply -f k8s/lightspeed/argocd/application-qwen3-4b.yaml
 
-# Check deployment
+# Check deployment in openshift-lightspeed namespace
 oc get olsconfig,pods,svc -n openshift-lightspeed
+
+# Verify model connectivity
+oc get svc -l app.kubernetes.io/name=ramalama -n ramalama
+```
+
+### Option B: All Lightspeed Configurations (Expert Only)
+
+> [!WARNING]  
+> **Resource Conflicts**: Multiple Lightspeed configurations will conflict over the same `OLSConfig` resource. Use only if you understand ArgoCD resource management.
+
+```bash
+# Deploy Lightspeed for all models (creates conflicts)
+oc apply -f k8s/lightspeed/argocd/applicationset-lightspeed.yaml
+
+# Monitor Lightspeed deployment and handle conflicts
+oc get applications -n openshift-gitops | grep lightspeed
 ```
 
 ## Step 4: Verify Deployment
@@ -85,11 +121,14 @@ oc get olsconfig,pods,svc -n openshift-lightspeed
 # Check all GitOps applications
 oc get applications -n openshift-gitops
 
-# Check ramalama models
-oc get pods,svc -n ramalama
+# Check ramalama models (all in ramalama namespace)
+oc get pods,svc -l app.kubernetes.io/name=ramalama -n ramalama
 
 # Check OpenShift Lightspeed
 oc get all -n openshift-lightspeed
+
+# Verify service discovery
+oc get svc -n ramalama | grep ramalama-service
 
 # Test model API
 MODEL_SERVICE=$(oc get svc -n ramalama -l model=qwen3-4b -o jsonpath='{.items[0].metadata.name}')
@@ -125,18 +164,40 @@ oc logs -n ramalama deployment/<model-name>-ramalama-deployment
 
 # Check events
 oc get events -n ramalama --sort-by='.lastTimestamp'
+
+# Check resource constraints
+oc describe pod -l model=<model-name> -n ramalama
+
+# Verify image pull
+oc get pod -l model=<model-name> -n ramalama -o yaml | grep -A 5 -B 5 image
+```
+
+**Service Discovery Issues**
+```bash
+# Check if services are in the correct namespace
+oc get svc -l app.kubernetes.io/name=ramalama -n ramalama
+
+# Test cross-namespace connectivity to Lightspeed
+oc exec -n openshift-lightspeed deployment/lightspeed-app-server -- \
+  curl -f http://qwen3-4b-ramalama-service.ramalama.svc.cluster.local:8080/v1/models
+
+# Check endpoints
+oc get endpoints -n ramalama
 ```
 
 **Lightspeed Not Working**
 ```bash
 # Check operator status
-oc get csv -n openshift-lightspeed
+oc get csv -n openshift-lightspeed | grep lightspeed
 
-# Check OLS configuration
-oc get olsconfig cluster -n openshift-lightspeed -o yaml
+# Check OLS configuration and model connectivity
+oc get olsconfig cluster -n openshift-lightspeed -o yaml | grep -A 5 -B 5 url
 
-# Check service connectivity
+# Verify model service connectivity
 oc get svc -n ramalama | grep ramalama-service
+
+# Check Lightspeed logs
+oc logs -l app.kubernetes.io/name=lightspeed-app-server -n openshift-lightspeed
 ```
 
 ## Advanced Configuration
@@ -150,6 +211,8 @@ source:
   repoURL: https://github.com/your-org/your-ramalama-fork.git
   targetRevision: main
   path: k8s/models/qwen3-4b
+destination:
+  namespace: ramalama
 ```
 
 ### Environment-Specific Configuration
@@ -157,11 +220,15 @@ source:
 Use overlays for different environments:
 
 ```yaml
-source:
-  path: k8s/models/qwen3-4b
-  kustomize:
-    overlays:
-    - '../../../overlays/production'
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ramalama-production-overlay
+spec:
+  source:
+    path: k8s/overlays/production
+  destination:
+    namespace: ramalama
 ```
 
 ### Private Git Repositories
@@ -180,6 +247,35 @@ oc create secret generic private-repo \
 oc label secret private-repo argocd.argoproj.io/secret-type=repository -n openshift-gitops
 ```
 
+### Multi-Model Deployment Strategy
+
+For anything approaching production environments, consider this:
+
+```yaml
+# Deploy models individually to avoid conflicts
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ramalama-qwen3-4b
+spec:
+  source:
+    path: k8s/models/qwen3-4b
+  destination:
+    namespace: ramalama
+
+---
+# Deploy single Lightspeed configuration
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: openshift-lightspeed-qwen3-4b
+spec:
+  source:
+    path: k8s/lightspeed/overlays/qwen3-4b
+  destination:
+    namespace: openshift-lightspeed
+```
+
 ## Best Practices
 
 1. **Use separate repositories** for configuration and code
@@ -193,4 +289,5 @@ oc label secret private-repo argocd.argoproj.io/secret-type=repository -n opensh
 
 - [OpenShift GitOps Documentation](https://docs.openshift.com/gitops/latest/)
 - [ArgoCD Documentation](https://argo-cd.readthedocs.io/)
-- [Kustomize Documentation](https://kustomize.io/) 
+- [Kustomize Documentation](https://kustomize.io/)
+- [OpenShift Lightspeed Documentation](https://docs.openshift.com/container-platform/latest/openshift_lightspeed/about-openshift-lightspeed.html) 

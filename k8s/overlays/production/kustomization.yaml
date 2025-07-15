@@ -10,6 +10,7 @@ namespace: ramalama
 
 resources:
   - ../../base
+  - ../../models/base-model/deployment.yaml
   - namespace.yaml
 
 labels:
@@ -30,9 +31,20 @@ configMapGenerator:
       - THREADS=16
       - CTX_SIZE=8192
       - CACHE_REUSE=512
+  - name: model-config
+    behavior: replace
+    literals:
+      - MODEL_NAME=production-model
+      - MODEL_FILE=/mnt/models/model.file
+      - ALIAS=production-model
 
-# Production resource limits and security
+# Apply base security and health check patches first
 patches:
+  - path: ../../models/base-model/deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: ramalama-deployment
+  # Then apply production resource limits
   - path: resources-patch.yaml
     target:
       kind: Deployment
@@ -41,7 +53,8 @@ patches:
 # Production-specific image tags
 images:
   - name: MODEL_IMAGE
-    newTag: stable
+    newName: ghcr.io/kush-gupt/centos-ramalama-min
+    newTag: latest
 
 replicas:
   - name: ramalama-deployment

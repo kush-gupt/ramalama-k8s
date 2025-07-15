@@ -27,8 +27,8 @@ The model management system consists of several components:
 If you have existing configurations:
 
 1. **Update model file paths** in your configurations to use `/mnt/models/` instead of `/models/`
-2. **Rebuild container images** with the updated Containerfiles
-3. **Update any custom scripts** that reference the old paths
+2. **Update deployment commands** to use the shared namespace approach
+3. **Rebuild container images** with the updated Containerfiles
 
 The CLI parameters still accept any path you specify, so you can override the defaults if needed.
 
@@ -51,6 +51,34 @@ The CLI parameters still accept any path you specify, so you can override the de
   --model-file "/mnt/models/llama-7b.gguf/llama-7b.gguf" \
   --ctx-size 4096 \
   --temp 0.7
+```
+
+### Deploying Models
+
+#### Single Model Deployment
+
+```bash
+# Create the shared namespace first (if it doesn't exist)
+kubectl apply -f k8s/models/ramalama-namespace.yaml
+
+# Deploy the model (automatically goes to ramalama namespace)
+kubectl apply -k k8s/models/llama-7b
+
+# Check deployment
+kubectl get all -l model=llama-7b -n ramalama
+```
+
+#### Environment-Specific Testing
+
+```bash
+# Development environment (includes namespace creation and base model)
+kubectl apply -k k8s/overlays/dev
+
+# Production environment (includes namespace creation and base model)
+kubectl apply -k k8s/overlays/production
+
+# Check deployment
+kubectl get pods -n ramalama
 ```
 
 ### Listing All Models
@@ -96,6 +124,7 @@ models:
     maintainer: "Maintainer Name"
     template: "llama"  # Optional: use predefined template
     resource_size: "medium"  # small/medium/large for template resources
+    create_lightspeed_overlay: true  # Generate OpenShift Lightspeed integration
     parameters:
       ctx_size: 4096
       threads: 14
@@ -129,6 +158,7 @@ templates:
 
 defaults:
   maintainer: "Default Maintainer"
+  lightspeed_namespace: "ramalama"  # Namespace where models are deployed
   parameters:
     ctx_size: 4096
     threads: 14
@@ -148,13 +178,19 @@ When you add a model, the following files are automatically generated:
 - **Location**: `k8s/models/{model-name}/kustomization.yaml`
 - **Purpose**: GitOps-compatible Kubernetes configuration
 - **Features**: Environment overlays, ConfigMap generation, security context
+- **Namespace**: All models deploy to `ramalama` namespace
 
-### 3. GitHub Workflow Integration
+### 3. OpenShift Lightspeed Integration (Optional)
+- **Location**: `k8s/lightspeed/overlays/{model-name}/kustomization.yaml`
+- **Purpose**: Automatic AI assistant integration
+- **Features**: Service discovery, configuration management
+
+### 4. GitHub Workflow Integration
 - **Location**: Updates `.github/workflows/build-images.yml`
 - **Purpose**: Adds CI/CD job for the new model
 - **Features**: Automatic building and pushing to registry
 
-### 4. Model Configuration
+### 5. Model Configuration
 - **Location**: `models/{model-name}.conf`
 - **Purpose**: Shell-compatible configuration file
 - **Usage**: Can be sourced by scripts for automation
@@ -198,6 +234,8 @@ Adds a new model to the repository.
 - `--top-p`: Top-p value (default: 0.95)
 - `--cache-reuse`: Cache reuse value (default: 256)
 - `--maintainer`: Maintainer name
+- `--create-lightspeed-overlay`: Create OpenShift Lightspeed integration
+- `--lightspeed-namespace`: Namespace for ramalama services (default: ramalama)
 - `--interactive`: Interactive mode
 - `-h, --help`: Show help
 
@@ -206,7 +244,7 @@ Adds a new model to the repository.
 # Interactive mode
 ./scripts/add-model.sh --interactive
 
-# Command line with all options
+# Command line with all options including Lightspeed
 ./scripts/add-model.sh \
   --name "mistral-7b" \
   --description "Mistral 7B Instruct model" \
@@ -214,7 +252,8 @@ Adds a new model to the repository.
   --model-file "/mnt/models/mistral-7b.gguf/mistral-7b.gguf" \
   --ctx-size 8192 \
   --temp 0.6 \
-  --maintainer "Your Name"
+  --maintainer "Your Name" \
+  --create-lightspeed-overlay
 
 # Using a config file
 ./scripts/add-model.sh --config models/mistral-7b.conf
@@ -244,6 +283,7 @@ Removes a model from the repository.
 - Containerfile
 - Kubernetes deployment
 - Model configuration
+- OpenShift Lightspeed overlay (if exists)
 - GitHub workflow job and environment variable
 
 ### generate-from-config.py
@@ -259,6 +299,7 @@ Generates all model files from the YAML configuration.
 - Default value merging
 - Automatic file generation
 - Workflow integration
+- OpenShift Lightspeed overlay generation
 
 ## Best Practices
 
@@ -268,7 +309,14 @@ Generates all model files from the YAML configuration.
 - Include size indication: `7b`, `13b`, `30b`
 - Be descriptive but concise
 
-### 2. Resource Allocation
+### 2. Namespace Management
+
+- **Always use the shared `ramalama` namespace** for model deployments
+- **Create namespace before deployment**: `oc apply -f k8s/models/ramalama-namespace.yaml`
+- **Verify namespace exists**: `oc get namespace ramalama`
+- **Check service discovery**: `oc get svc -n ramalama -l app.kubernetes.io/name=ramalama`
+
+### 3. Resource Allocation
 
 **Small models (<7B parameters):**
 ```yaml
@@ -294,7 +342,7 @@ resources:
     cpu: "6"
 ```
 
-### 3. Parameter Tuning
+### 4. Parameter Tuning
 
 **For chat/instruct models:**
 - Higher temperature (0.7-0.9)
@@ -306,30 +354,59 @@ resources:
 - Higher top-k (40-80)
 - Larger context size (8192+)
 
-### 4. Testing
+### 5. Testing
 
 Before committing:
-1. Test local build: `podman build -f containerfiles/Containerfile-{model} .`
-2. Test deployment: `kubectl apply -k k8s/models/{model}`
-3. Verify workflow syntax: Check GitHub Actions tab after push
+1. **Verify namespace**: `oc get namespace ramalama`
+2. **Test local build**: `podman build -f containerfiles/Containerfile-{model} .`
+3. **Test deployment**: `oc apply -k k8s/models/{model}`
+4. **Check service discovery**: `oc get svc -l model={model} -n ramalama`
+5. **Verify workflow syntax**: Check GitHub Actions tab after push
 
 ## Troubleshooting
 
 ### Common Issues
 
-**1. Model file path incorrect**
+**1. Namespace Creation Problems**
+```bash
+# Ensure the ramalama namespace exists
+oc apply -f k8s/models/ramalama-namespace.yaml
+
+# Or create manually
+oc create project ramalama
+
+# Check if namespace exists
+oc get project ramalama
+```
+
+**2. Service Discovery Issues**
+```bash
+# Check if services are in the correct namespace
+oc get svc -l app.kubernetes.io/name=ramalama -n ramalama
+
+# Test service connectivity
+oc port-forward -n ramalama svc/{model-name}-ramalama-service 8080:8080
+
+# Check endpoints
+oc get endpoints -n ramalama
+```
+
+**3. Model file path incorrect**
 - Verify the path exists in the model source image
 - Check exact capitalization and path structure
+- Ensure using `/mnt/models/` prefix
 
-**2. Resource constraints**
+**4. Resource constraints**
 - Adjust memory/CPU requests based on model size
 - Monitor actual usage and adjust limits accordingly
+- Check pod status: `oc describe pod -l model={model-name} -n ramalama`
 
-**3. Build failures**
+**5. Build failures**
 - Ensure model source image is accessible
 - Verify base image compatibility
+- Check build logs in GitHub Actions
 
-**4. Workflow errors**
+**6. Workflow errors**
 - Check GitHub Actions logs for specific errors
 - Verify registry permissions and secrets
 

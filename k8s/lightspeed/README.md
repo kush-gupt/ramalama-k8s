@@ -29,16 +29,37 @@ graph LR
 
 ## 📋 Prerequisites
 
-Before deploying OpenShift Lightspeed, ensure you have:
+Before you begin, make sure you have:
 
 - **🔑 Cluster Admin Access**: Required for operator installation
 - **☸️ OpenShift 4.15+**: Minimum supported version
-- **🚀 Ramalama Models**: At least one ramalama model deployed (see [main README](../../README.md))
+- **🚀 Ramalama Models**: *At least one ramalama model deployed in the `ramalama` namespace*
 - **🔧 OpenShift GitOps (Optional)**: For GitOps deployment (Red Hat's ArgoCD distribution)
+
+> [!IMPORTANT]  
+> **Namespace Requirements**: Ensure you have at least one model running in the `ramalama` namespace before deploying Lightspeed. All model services are discovered using the `{model-name}-ramalama-service.ramalama.svc.cluster.local` pattern.
 
 ## ⚡ Quick Start
 
-### Option 1: Deploy with OpenShift GitOps
+### Step 1: Verify Model Deployment
+
+```bash
+# Ensure you have at least one model running in the ramalama namespace
+oc get pods -l app.kubernetes.io/name=ramalama -n ramalama
+
+# Check available services
+oc get svc -l app.kubernetes.io/name=ramalama -n ramalama
+
+# If no models are deployed, deploy one first:
+oc apply -f k8s/models/ramalama-namespace.yaml
+oc apply -k k8s/models/qwen3-4b
+```
+
+### Step 2: Deploy OpenShift Lightspeed
+
+Choose your deployment method:
+
+#### Option 1: Deploy with OpenShift GitOps (Recommended)
 
 If you have OpenShift GitOps installed, deploy a single model to avoid resource conflicts:
 
@@ -54,17 +75,11 @@ oc get applications -n openshift-gitops | grep lightspeed
 ```
 
 > [!WARNING]  
-> **ApplicationSet Conflicts**: The ApplicationSet deploys multiple models that all conflict over the same `OLSConfig` resource. For production use, deploy only one Lightspeed configuration per cluster.
+> **ApplicationSet Conflicts**: The ApplicationSet (`k8s/lightspeed/argocd/applicationset-lightspeed.yaml`) deploys multiple models that all conflict over the same `OLSConfig` resource. For production use, deploy only one Lightspeed configuration per cluster.
 
-### Option 2: Direct Kustomize Deployment
+#### Option 2: Direct Kustomize Deployment
 
-#### Deploy Base Lightspeed (Auto-Discovery)
-```bash
-# Deploy with auto-discovery of available models
-oc apply -k k8s/lightspeed/overlays/auto-discovery
-```
-
-#### Deploy for Specific Model
+##### Deploy for Specific Model (Recommended)
 ```bash
 # Deploy for Qwen 3 4B model
 oc apply -k k8s/lightspeed/overlays/qwen3-4b
@@ -76,6 +91,46 @@ oc apply -k k8s/lightspeed/overlays/qwen3-30b
 oc apply -k k8s/lightspeed/overlays/deepseek-r1-qwen3-8b
 ```
 
+##### Deploy with Auto-Discovery
+```bash
+# Deploy with auto-discovery of available models
+oc apply -k k8s/lightspeed/overlays/auto-discovery
+```
+
+### Step 3: Verify Installation
+
+All OpenShift Lightspeed resources are deployed in the `openshift-lightspeed` namespace:
+
+```bash
+# Check operator installation
+oc get subscription -n openshift-lightspeed
+
+# Check OLS configuration
+oc get olsconfig -n openshift-lightspeed
+
+# Check all secrets are properly deployed
+oc get secrets -n openshift-lightspeed
+
+# Check pods are running
+oc get pods -n openshift-lightspeed
+
+# Check service endpoints
+oc get svc -n openshift-lightspeed
+
+# Verify all resources in the namespace
+oc get all -n openshift-lightspeed
+```
+
+### Step 4: Access OpenShift Lightspeed
+
+1. **Open OpenShift Web Console**
+2. **Look for the Lightspeed icon** (usually in the top navigation)
+3. **Start asking questions** like:
+   - "How do I create a deployment?"
+   - "Show me how to troubleshoot pod failures"
+   - "Generate a service YAML for my application"
+   - "What tools do you have access to?"
+
 ## 📁 Directory Structure
 
 ```
@@ -85,10 +140,10 @@ k8s/lightspeed/
 │   ├── subscription.yaml               # Operator subscription
 │   ├── olsconfig.yaml                  # Base OLS configuration
 │   ├── credentials-secret.yaml         # API credentials for ramalama services
-│   ├── lightspeed-postgres-secret.yaml # PostgreSQL credentials for conversation cache
 │   └── kustomization.yaml             # Base kustomization
 ├── overlays/                     # Model-specific configurations
 │   ├── auto-discovery/           # Auto-discover available models
+│   ├── qwen3-1b/                # Qwen 3 1.7B model integration
 │   ├── qwen3-4b/                # Qwen 3 4B model integration
 │   ├── qwen3-30b/               # Qwen 3 30B model integration
 │   └── deepseek-r1-qwen3-8b/    # DeepSeek R1 model integration
@@ -197,7 +252,7 @@ oc apply -k k8s/lightspeed/overlays/auto-discovery
 #### Method D: Multiple Models (Expert Only)
 
 > [!WARNING]  
-> **Resource Conflicts**: Multiple Applications will conflict over the same `OLSConfig`. Use only if you understand ArgoCD resource management.
+> **Resource Conflicts**: Multiple Applications will conflict over the same `OLSConfig`. Use only if you understand ArgoCD resource management and plan to manage conflicts manually.
 
 ```bash
 # Deploy ApplicationSet (creates resource conflicts)
@@ -207,42 +262,12 @@ oc apply -f k8s/lightspeed/argocd/applicationset-lightspeed.yaml
 oc get applications -n openshift-gitops | grep lightspeed
 ```
 
-### Step 3: Verify Installation
-
-All OpenShift Lightspeed resources are deployed in the `openshift-lightspeed` namespace:
-
-```bash
-# Check operator installation
-oc get subscription -n openshift-lightspeed
-
-# Check OLS configuration
-oc get olsconfig -n openshift-lightspeed
-
-# Check all secrets are properly deployed
-oc get secrets -n openshift-lightspeed
-
-# Check pods are running
-oc get pods -n openshift-lightspeed
-
-# Check service endpoints
-oc get svc -n openshift-lightspeed
-
-# Verify all resources in the namespace
-oc get all -n openshift-lightspeed
-```
-
-### Step 4: Access OpenShift Lightspeed
-
-1. **Open OpenShift Web Console**
-2. **Look for the Lightspeed icon** (usually in the top navigation)
-3. **Start asking questions** like:
-   - "How do I create a deployment?"
-   - "Show me how to troubleshoot pod failures"
-   - "Generate a service YAML for my application"
-
 ## 🎉 Quick Commands Summary
 
 ```bash
+# Verify models are running in ramalama namespace
+oc get pods -l app.kubernetes.io/name=ramalama -n ramalama
+
 # Deploy with OpenShift GitOps (single model - recommended)
 oc apply -f k8s/lightspeed/argocd/application-qwen3-4b.yaml
 
@@ -264,6 +289,80 @@ oc delete application openshift-lightspeed-qwen3-4b -n openshift-gitops
 # Or clean up direct deployment
 oc delete -k k8s/lightspeed/overlays/qwen3-4b
 ```
+
+## 🛠️ Troubleshooting
+
+### Common Issues
+
+#### 1. Model Service Not Found
+```bash
+# Check if models are running in the correct namespace
+oc get svc -l app.kubernetes.io/name=ramalama -n ramalama
+
+# Check OLS configuration
+oc get olsconfig cluster -n openshift-lightspeed -o yaml | grep url
+
+# Test service connectivity
+oc exec -n openshift-lightspeed deployment/lightspeed-app-server -- curl -f http://qwen3-4b-ramalama-service.ramalama.svc.cluster.local:8080/v1/models
+```
+
+#### 2. OLS Configuration Conflicts
+```bash
+# Check for multiple overlapping configurations
+oc get olsconfig -A
+
+# View current configuration
+oc describe olsconfig cluster -n openshift-lightspeed
+```
+
+#### 3. Operator Installation Issues
+```bash
+# Check operator subscription
+oc get subscription lightspeed-operator -n openshift-lightspeed
+
+# Check CSV status
+oc get csv -n openshift-lightspeed | grep lightspeed
+
+# Check operator logs
+oc logs -l app.kubernetes.io/name=lightspeed-operator -n openshift-lightspeed
+```
+
+#### 4. Service Discovery Problems
+```bash
+# Check if ramalama services are accessible
+oc get endpoints -n ramalama
+
+# Test cross-namespace connectivity
+oc run test-pod --rm -i --tty --image=curlimages/curl -- sh
+# Inside the pod:
+curl http://qwen3-4b-ramalama-service.ramalama.svc.cluster.local:8080/v1/models
+```
+
+### Debugging Commands
+
+```bash
+# Check all Lightspeed resources
+oc get all -n openshift-lightspeed
+
+# Check configuration
+oc get olsconfig cluster -n openshift-lightspeed -o yaml
+
+# Check logs
+oc logs -l app.kubernetes.io/name=lightspeed-app-server -n openshift-lightspeed
+
+# Check operator logs
+oc logs -l app.kubernetes.io/name=lightspeed-operator -n openshift-lightspeed
+
+# Test model connectivity
+oc port-forward -n ramalama svc/qwen3-4b-ramalama-service 8080:8080
+curl http://localhost:8080/v1/models
+```
+
+## 📚 Additional Resources
+
+- [OpenShift Lightspeed Documentation](https://docs.openshift.com/container-platform/latest/openshift_lightspeed/about-openshift-lightspeed.html)
+- [Ramalama Models Documentation](../README.md)
+- [OpenShift GitOps Documentation](https://docs.openshift.com/gitops/latest/)
 
 ---
 
