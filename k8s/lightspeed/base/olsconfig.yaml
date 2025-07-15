@@ -22,14 +22,6 @@ spec:
         type: openai
         url: http://qwen3-4b-ramalama-service.ramalama.svc.cluster.local:8080/v1
   ols:
-    logLevel: INFO
-    defaultProvider: ramalama
-    defaultModel: default
-    deployment:
-      console:
-        replicas: 1
-      replicas: 1
-    introspectionEnabled: true
     conversationCache:
       postgres:
         credentialsSecret: lightspeed-postgres-secret
@@ -38,5 +30,13 @@ spec:
         sharedBuffers: 256MB
         user: postgres
       type: postgres
-  olsDataCollector:
+    defaultModel: default
+    defaultProvider: ramalama
+    deployment:
+      console:
+        replicas: 1
+      replicas: 1
+    introspectionEnabled: true
     logLevel: INFO
+  olsDataCollector:
+    logLevel: INFO 

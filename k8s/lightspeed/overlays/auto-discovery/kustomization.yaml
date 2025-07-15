@@ -1,0 +1,49 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: openshift-lightspeed-auto-discovery
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+
+resources:
+  - ../../base
+  - service-discovery.yaml
+
+patches:
+  - target:
+      kind: OLSConfig
+      name: cluster
+    patch: |-
+      - op: replace
+        path: /spec/llm/providers/0/url
+        value: http://ramalama-discovery.openshift-lightspeed.svc.cluster.local:8080/v1
+      - op: replace
+        path: /spec/llm/providers/0/models/0/name
+        value: default
+      - op: add
+        path: /metadata/labels/model
+        value: auto-discovery
+      - op: add
+        path: /metadata/labels/environment
+        value: auto-discovery
+  - target:
+      kind: Secret
+      name: credentials
+    patch: |-
+      - op: add
+        path: /metadata/labels/model
+        value: auto-discovery
+      - op: add
+        path: /metadata/labels/environment
+        value: auto-discovery
+  - target:
+      kind: Subscription
+      name: lightspeed-operator
+    patch: |-
+      - op: add
+        path: /metadata/labels/model
+        value: auto-discovery
+      - op: add
+        path: /metadata/labels/environment
+        value: auto-discovery 

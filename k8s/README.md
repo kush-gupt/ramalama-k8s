@@ -2,9 +2,13 @@
 
 This directory contains GitOps-compatible Kubernetes manifests for deploying Ramalama LLM models using Kustomize and ArgoCD.
 
-## Important: Model Path Changes
+## Important Changes
 
+### Model Path Changes
 **Note**: All configurations in this directory now use `/mnt/models/` paths instead of `/models/` for model files. This change provides better alignment with container runtime expectations and default execution behavior. If you have existing deployments, you may need to update your configurations and rebuild your container images.
+
+### Simplified Namespace Structure
+**All models now deploy to the `ramalama` namespace** for simplified management and better auto-detection with OpenShift Lightspeed. This consolidates all model services into a single namespace, making service discovery and integration more straightforward.
 
 **Standard Model Path Format**: All model files must be referenced using the format:
 ```
@@ -51,7 +55,7 @@ k8s/
 ### GitOps Compatibility
 - **Declarative Configuration**: All resources defined as code
 - **ArgoCD Sync Waves**: Proper deployment ordering
-- **Environment Separation**: Clean overlay structure
+- **Simplified Namespace Structure**: All models deploy to `ramalama` namespace
 - **Automated Deployment**: No manual kubectl required
 
 ### Kustomize Structure

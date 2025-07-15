@@ -1,0 +1,55 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: openshift-lightspeed-base
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+
+resources:
+  - subscription.yaml
+  - credentials-secret.yaml
+  - olsconfig.yaml
+
+# Use targeted patches instead of commonLabels to avoid
+# applying labels to immutable namespace metadata
+patches:
+  - target:
+      kind: Subscription
+      name: lightspeed-operator
+    patch: |-
+      - op: add
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: openshift-lightspeed
+      - op: add
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: ramalama-k8s
+      - op: add
+        path: /metadata/annotations/argocd.argoproj.io~1managed
+        value: "true"
+  - target:
+      kind: Secret
+      name: credentials
+    patch: |-
+      - op: add
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: openshift-lightspeed
+      - op: add
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: ramalama-k8s
+      - op: add
+        path: /metadata/annotations/argocd.argoproj.io~1managed
+        value: "true"
+  - target:
+      kind: OLSConfig
+      name: cluster
+    patch: |-
+      - op: add
+        path: /metadata/labels/app.kubernetes.io~1name
+        value: openshift-lightspeed
+      - op: add
+        path: /metadata/labels/app.kubernetes.io~1part-of
+        value: ramalama-k8s
+      - op: add
+        path: /metadata/annotations/argocd.argoproj.io~1managed
+        value: "true" 

@@ -26,7 +26,7 @@ configMapGenerator:
   behavior: merge
   literals:
   - CTX_SIZE=32000
-  - THREADS=14
+  - THREADS=16
   - TEMP=0.6
   - TOP_K=20
   - TOP_P=0.95
@@ -34,5 +34,5 @@ configMapGenerator:
 
 images:
 - name: MODEL_IMAGE
-  newName: "ghcr.io/kush-gupt/qwen3-1b-ramalama"
+  newName: "ghcr.io/kush-gupt/qwen3-1b-ramalama:latest"
   newTag: latest 

@@ -23,13 +23,13 @@ spec:
       - list:
           elements:
           - env: dev
-            namespace: ramalama-dev
+            namespace: ramalama
             server: https://kubernetes.default.svc
           - env: staging
-            namespace: ramalama-staging
+            namespace: ramalama
             server: https://kubernetes.default.svc
           - env: production
-            namespace: ramalama-production
+            namespace: ramalama
             server: https://kubernetes.default.svc
             
   template:

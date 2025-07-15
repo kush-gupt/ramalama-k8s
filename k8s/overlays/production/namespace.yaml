@@ -1,9 +1,9 @@
-apiVersion: v1
-kind: Namespace
+apiVersion: project.openshift.io/v1
+kind: Project
 metadata:
-  name: ramalama-production
+  name: ramalama
   labels:
-    name: ramalama-production
+    name: ramalama
     environment: production
     app.kubernetes.io/name: ramalama
     app.kubernetes.io/part-of: ramalama-k8s

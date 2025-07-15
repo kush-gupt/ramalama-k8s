@@ -51,6 +51,8 @@ Options:
     --top-p             Top-p value (default: 0.95)
     --cache-reuse       Cache reuse value (default: 256)
     --maintainer        Maintainer name (default: "Kush Gupta")
+    --create-lightspeed-overlay  Create OpenShift Lightspeed overlay for this model
+    --lightspeed-namespace       Namespace where ramalama services are deployed (default: ramalama)
     --interactive       Interactive mode to prompt for values
     -h, --help          Show this help message
 
@@ -63,6 +65,13 @@ Examples:
        --description "Llama 7B model" \\
        --model-gguf-url "hf://ggml-org/llama-7b/llama-7b.gguf" \\
        --model-file "/mnt/models/llama-7b.gguf/llama-7b.gguf"
+    
+    # With Lightspeed overlay
+    $0 --name llama-7b \\
+       --description "Llama 7B model" \\
+       --model-gguf-url "hf://ggml-org/llama-7b/llama-7b.gguf" \\
+       --model-file "/mnt/models/llama-7b.gguf/llama-7b.gguf" \\
+       --create-lightspeed-overlay
     
     # Using config file
     $0 --config models/llama-7b.conf
@@ -78,6 +87,7 @@ DEFAULT_TOP_P=0.95
 DEFAULT_CACHE_REUSE=256
 DEFAULT_MAINTAINER="Kush Gupta"
 DEFAULT_REGISTRY_PATH="ghcr.io/kush-gupt"
+DEFAULT_LIGHTSPEED_NAMESPACE="ramalama"
 
 # Variables
 MODEL_NAME=""
@@ -95,6 +105,8 @@ MAINTAINER="$DEFAULT_MAINTAINER"
 REGISTRY_PATH="$DEFAULT_REGISTRY_PATH"
 CONFIG_FILE=""
 INTERACTIVE_MODE=false
+CREATE_LIGHTSPEED_OVERLAY=true
+LIGHTSPEED_NAMESPACE="$DEFAULT_LIGHTSPEED_NAMESPACE"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -155,6 +167,14 @@ while [[ $# -gt 0 ]]; do
             MAINTAINER="$2"
             shift 2
             ;;
+        --create-lightspeed-overlay)
+            CREATE_LIGHTSPEED_OVERLAY=true
+            shift
+            ;;
+        --lightspeed-namespace)
+            LIGHTSPEED_NAMESPACE="$2"
+            shift 2
+            ;;
         --interactive)
             INTERACTIVE_MODE=true
             shift
@@ -202,6 +222,13 @@ if [[ "$INTERACTIVE_MODE" == "true" ]]; then
     read -p "Maintainer [$DEFAULT_MAINTAINER]: " MAINTAINER
     read -p "Registry Path [$DEFAULT_REGISTRY_PATH]: " REGISTRY_PATH
     
+    # Ask about Lightspeed overlay
+    read -p "Create OpenShift Lightspeed overlay? (y/N): " create_lightspeed
+    if [[ "$create_lightspeed" == "y" || "$create_lightspeed" == "Y" ]]; then
+        CREATE_LIGHTSPEED_OVERLAY=true
+        read -p "Lightspeed service namespace [$DEFAULT_LIGHTSPEED_NAMESPACE]: " LIGHTSPEED_NAMESPACE
+    fi
+    
     # Use defaults if empty
     CTX_SIZE=${CTX_SIZE:-$DEFAULT_CTX_SIZE}
     THREADS=${THREADS:-$DEFAULT_THREADS}
@@ -211,6 +238,7 @@ if [[ "$INTERACTIVE_MODE" == "true" ]]; then
     CACHE_REUSE=${CACHE_REUSE:-$DEFAULT_CACHE_REUSE}
     MAINTAINER=${MAINTAINER:-$DEFAULT_MAINTAINER}
     REGISTRY_PATH=${REGISTRY_PATH:-$DEFAULT_REGISTRY_PATH}
+    LIGHTSPEED_NAMESPACE=${LIGHTSPEED_NAMESPACE:-$DEFAULT_LIGHTSPEED_NAMESPACE}
 fi
 
 # Validate required parameters
@@ -267,11 +295,11 @@ ARG MODEL_SOURCE_NAME
 
 # Copy the entire /models directory from the model source
 # into the final application image.
-COPY --from=${MODEL_SOURCE_NAME} /models /models
+COPY --from=${MODEL_SOURCE_NAME} /models /mnt/models
 
 # This is a sanity check for OpenShift's random user ID.
 USER root
-RUN chmod -R a+rX /models
+RUN chmod -R a+rX /mnt/models
 USER 1001
 
 # Optional: Add labels to describe your new all-in-one image
@@ -329,6 +357,42 @@ EOF
     fi
 }
 
+# Function to create Lightspeed overlay template if it doesn't exist
+create_lightspeed_template() {
+    local template_file="$TEMPLATES_DIR/lightspeed-overlay.template.yaml"
+    if [[ ! -f "$template_file" ]]; then
+        log_info "Creating Lightspeed overlay template"
+        cat > "$template_file" << 'EOF'
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: openshift-lightspeed-{{MODEL_NAME_SAFE}}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+
+resources:
+  - ../../base
+
+patches:
+  - target:
+      kind: OLSConfig
+      name: cluster
+    patch: |-
+      - op: replace
+        path: /spec/llm/providers/0/url
+        value: http://{{MODEL_NAME_SAFE}}-ramalama-service.{{LIGHTSPEED_NAMESPACE}}.svc.cluster.local:8080/v1
+      - op: replace
+        path: /spec/llm/providers/0/models/0/name
+        value: default
+
+commonLabels:
+  model: {{MODEL_NAME_SAFE}}
+  environment: {{MODEL_NAME_SAFE}}
+EOF
+    fi
+}
+
 # Function to substitute template variables
 substitute_template() {
     local template_file="$1"
@@ -349,12 +413,16 @@ substitute_template() {
         -e "s|{{TOP_P}}|$TOP_P|g" \
         -e "s|{{CACHE_REUSE}}|$CACHE_REUSE|g" \
         -e "s|{{MAINTAINER}}|$MAINTAINER|g" \
+        -e "s|{{LIGHTSPEED_NAMESPACE}}|$LIGHTSPEED_NAMESPACE|g" \
         "$template_file" > "$output_file"
 }
 
 # Create templates
 create_containerfile_template
 create_k8s_template
+if [[ "$CREATE_LIGHTSPEED_OVERLAY" == "true" ]]; then
+    create_lightspeed_template
+fi
 
 # Generate Containerfile
 log_info "Generating Containerfile-${MODEL_NAME_SAFE}"
@@ -367,6 +435,15 @@ MODEL_K8S_DIR="$REPO_ROOT/k8s/models/${MODEL_NAME_SAFE}"
 mkdir -p "$MODEL_K8S_DIR"
 KUSTOMIZATION_PATH="$MODEL_K8S_DIR/kustomization.yaml"
 substitute_template "$TEMPLATES_DIR/kustomization.template.yaml" "$KUSTOMIZATION_PATH"
+
+# Generate Lightspeed overlay if requested
+if [[ "$CREATE_LIGHTSPEED_OVERLAY" == "true" ]]; then
+    log_info "Generating OpenShift Lightspeed overlay for ${MODEL_NAME_SAFE}"
+    LIGHTSPEED_OVERLAY_DIR="$REPO_ROOT/k8s/lightspeed/overlays/${MODEL_NAME_SAFE}"
+    mkdir -p "$LIGHTSPEED_OVERLAY_DIR"
+    LIGHTSPEED_KUSTOMIZATION_PATH="$LIGHTSPEED_OVERLAY_DIR/kustomization.yaml"
+    substitute_template "$TEMPLATES_DIR/lightspeed-overlay.template.yaml" "$LIGHTSPEED_KUSTOMIZATION_PATH"
+fi
 
 # Note: With the new modular workflow system, no manual workflow updates are needed!
 # The workflow automatically discovers models from the models.yaml configuration file.
@@ -392,6 +469,8 @@ TOP_K=$TOP_K
 TOP_P=$TOP_P
 CACHE_REUSE=$CACHE_REUSE
 MAINTAINER="$MAINTAINER"
+CREATE_LIGHTSPEED_OVERLAY=$CREATE_LIGHTSPEED_OVERLAY
+LIGHTSPEED_NAMESPACE="$LIGHTSPEED_NAMESPACE"
 EOF
 
 # Summary
@@ -402,6 +481,9 @@ echo -e "${BLUE}Generated files:${NC}"
 echo "  - containerfiles/Containerfile-${MODEL_NAME_SAFE}"
 echo "  - k8s/models/${MODEL_NAME_SAFE}/kustomization.yaml"
 echo "  - models/${MODEL_NAME_SAFE}.conf"
+if [[ "$CREATE_LIGHTSPEED_OVERLAY" == "true" ]]; then
+    echo "  - k8s/lightspeed/overlays/${MODEL_NAME_SAFE}/kustomization.yaml"
+fi
 echo "  - NOTE: Using GitOps-compatible Kustomize structure!"
 echo
 echo -e "${BLUE}Next steps:${NC}"
@@ -411,6 +493,12 @@ echo -e "${YELLOW}ramalama convert ${MODEL_GGUF_URL} oci://${REGISTRY_PATH}/${MO
 echo "3. Commit and push to trigger the CI/CD pipeline (uses modular workflow)"
 echo "4. Build and test locally if needed:"
 echo
+if [[ "$CREATE_LIGHTSPEED_OVERLAY" == "true" ]]; then
+    echo -e "${BLUE}OpenShift Lightspeed integration:${NC}"
+    echo "5. Deploy the Lightspeed overlay:"
+    echo -e "${YELLOW}kubectl apply -k k8s/lightspeed/overlays/${MODEL_NAME_SAFE}${NC}"
+    echo
+fi
 echo -e "${YELLOW}Local build example:${NC}"
 export IMAGE_OWNER="your-registry/username"
 export BASE_IMAGE_TAG="\${IMAGE_OWNER}/centos-ramalama-min:latest"

@@ -1,26 +1,25 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: ramalama-qwen-4b-dev
+  name: openshift-lightspeed-qwen3-4b
   namespace: argocd
   labels:
-    app.kubernetes.io/name: ramalama
-    app.kubernetes.io/component: llm-server
-    environment: dev
-    model: qwen-4b
+    app.kubernetes.io/name: openshift-lightspeed
+    app.kubernetes.io/component: ai-assistant
+    model: qwen3-4b
   annotations:
-    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/sync-wave: "3"
 spec:
   project: default
   
   source:
     repoURL: https://github.com/kush-gupt/ramalama-k8s.git
     targetRevision: HEAD
-    path: k8s/models/qwen-4b
+    path: k8s/lightspeed/overlays/qwen3-4b
     
   destination:
     server: https://kubernetes.default.svc
-    namespace: ramalama
+    namespace: openshift-lightspeed
     
   syncPolicy:
     automated:
@@ -31,6 +30,7 @@ spec:
       - CreateNamespace=true
       - PrunePropagationPolicy=foreground
       - PruneLast=true
+      - RespectIgnoreDifferences=true
     retry:
       limit: 5
       backoff:
@@ -42,13 +42,15 @@ spec:
   
   # Health check configuration
   ignoreDifferences:
-  - group: apps
-    kind: Deployment
+  - group: ols.openshift.io
+    kind: OLSConfig
     jsonPointers:
-    - /spec/replicas
+    - /spec/llm/providers/0/url
     
   info:
+  - name: 'Component:'
+    value: 'OpenShift Lightspeed'
   - name: 'Model:'
-    value: 'Qwen 4B'
-  - name: 'Environment:'
-    value: 'Development' 
+    value: 'Qwen 3 4B'
+  - name: 'Description:'
+    value: 'AI-powered assistant for OpenShift with Qwen 3 4B model backend' 

@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ramalama-discovery
+  namespace: openshift-lightspeed
+  labels:
+    app.kubernetes.io/name: ramalama-discovery
+    app.kubernetes.io/part-of: openshift-lightspeed
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  type: ExternalName
+  externalName: qwen3-4b-ramalama-service.ramalama.svc.cluster.local
+  ports:
+    - name: http-api
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: service-discovery-config
+  namespace: openshift-lightspeed
+  labels:
+    app.kubernetes.io/name: service-discovery-config
+    app.kubernetes.io/part-of: openshift-lightspeed
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+data:
+  discovery.yaml: |
+    # Service discovery configuration
+    # This can be updated to point to different ramalama services
+    default_service: "qwen3-4b-ramalama-service.ramalama.svc.cluster.local"
+    available_services:
+      - name: "qwen3-1b"
+        service: "qwen3-1b-ramalama-service.ramalama.svc.cluster.local"
+        description: "Qwen 3 1.7B model"
+      - name: "qwen3-4b" 
+        service: "qwen3-4b-ramalama-service.ramalama.svc.cluster.local"
+        description: "Qwen 3 4B model"
+      - name: "qwen3-30b"
+        service: "qwen3-30b-ramalama-service.ramalama.svc.cluster.local"
+        description: "Qwen 3 30B model"
+      - name: "deepseek-r1-qwen3-8b"
+        service: "deepseek-r1-qwen3-8b-ramalama-service.ramalama.svc.cluster.local"
+        description: "DeepSeek R1 Qwen3 8B model" 

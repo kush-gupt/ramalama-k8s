@@ -24,9 +24,10 @@ class ModelGenerator:
         self.models_dir = self.repo_root / "models"
         self.scripts_dir = self.repo_root / "scripts"
         self.workflow_dir = self.repo_root / ".github" / "workflows"
+        self.lightspeed_dir = self.repo_root / "k8s" / "lightspeed" / "overlays"
         
-        for dir_path in [self.containerfiles_dir, self.k8s_dir, self.models_dir]:
-            dir_path.mkdir(exist_ok=True)
+        for dir_path in [self.containerfiles_dir, self.k8s_dir, self.models_dir, self.lightspeed_dir]:
+            dir_path.mkdir(parents=True, exist_ok=True)
 
     def _load_config(self) -> Dict[str, Any]:
         """Load and validate the YAML configuration."""
@@ -189,6 +190,62 @@ patchesStrategicMerge:
         
         return kustomization_yaml, model_patch
 
+    def generate_lightspeed_overlay(self, model_key: str, model_config: Dict[str, Any]) -> str:
+        """Generate OpenShift Lightspeed overlay."""
+        model_name_safe = model_config['model_name_safe']
+        lightspeed_namespace = model_config.get('lightspeed_namespace', 'ramalama')
+        
+        overlay_yaml = f"""apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: openshift-lightspeed-{model_name_safe}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+
+resources:
+  - ../../base
+
+patches:
+  - target:
+      kind: OLSConfig
+      name: cluster
+    patch: |-
+      - op: replace
+        path: /spec/llm/providers/0/url
+        value: http://{model_name_safe}-ramalama-service.{lightspeed_namespace}.svc.cluster.local:8080/v1
+      - op: replace
+        path: /spec/llm/providers/0/models/0/name
+        value: default
+      - op: add
+        path: /metadata/labels/model
+        value: {model_name_safe}
+      - op: add
+        path: /metadata/labels/environment
+        value: {model_name_safe}
+  - target:
+      kind: Secret
+      name: credentials
+    patch: |-
+      - op: add
+        path: /metadata/labels/model
+        value: {model_name_safe}
+      - op: add
+        path: /metadata/labels/environment
+        value: {model_name_safe}
+  - target:
+      kind: Subscription
+      name: lightspeed-operator
+    patch: |-
+      - op: add
+        path: /metadata/labels/model
+        value: {model_name_safe}
+      - op: add
+        path: /metadata/labels/environment
+        value: {model_name_safe}"""
+        
+        return overlay_yaml
+
     def generate_workflow_job(self, model_key: str, model_config: Dict[str, Any]) -> tuple[str, str]:
         """Generate GitHub workflow job content."""
         model_name_safe = model_config['model_name_safe']
@@ -294,6 +351,7 @@ patchesStrategicMerge:
         
         env_vars = []
         workflow_jobs = []
+        lightspeed_count = 0
         
         for model_key, model_config in self.config['models'].items():
             print(f"Processing model: {model_key}")
@@ -326,6 +384,18 @@ patchesStrategicMerge:
                     f.write(model_patch)
                 print(f"  Generated: {patch_path}")
             
+            # Generate Lightspeed overlay if requested
+            if merged_config.get('create_lightspeed_overlay', False):
+                lightspeed_content = self.generate_lightspeed_overlay(model_key, merged_config)
+                lightspeed_model_dir = self.lightspeed_dir / model_name_safe
+                lightspeed_model_dir.mkdir(parents=True, exist_ok=True)
+                
+                lightspeed_path = lightspeed_model_dir / "kustomization.yaml"
+                with open(lightspeed_path, 'w') as f:
+                    f.write(lightspeed_content)
+                print(f"  Generated: {lightspeed_path}")
+                lightspeed_count += 1
+            
             # Generate workflow job
             job_content, env_var_name = self.generate_workflow_job(model_key, merged_config)
             workflow_jobs.append(job_content)
@@ -345,6 +415,8 @@ TOP_K={merged_config.get('parameters', {}).get('top_k', 40)}
 TOP_P={merged_config.get('parameters', {}).get('top_p', 0.9)}
 CACHE_REUSE={merged_config.get('parameters', {}).get('cache_reuse', 256)}
 MAINTAINER="{merged_config.get('maintainer', 'Unknown')}"
+CREATE_LIGHTSPEED_OVERLAY={str(merged_config.get('create_lightspeed_overlay', False)).lower()}
+LIGHTSPEED_NAMESPACE="{merged_config.get('lightspeed_namespace', 'default')}"
 """
             config_path = self.models_dir / f"{model_name_safe}.conf"
             with open(config_path, 'w') as f:
@@ -357,6 +429,8 @@ MAINTAINER="{merged_config.get('maintainer', 'Unknown')}"
         
         print("\nGeneration completed successfully!")
         print(f"Generated files for {len(self.config['models'])} models")
+        if lightspeed_count > 0:
+            print(f"Generated {lightspeed_count} OpenShift Lightspeed overlays")
 
     def _update_workflow(self, env_vars: list, workflow_jobs: list):
         """Update the GitHub workflow with new environment variables and jobs."""

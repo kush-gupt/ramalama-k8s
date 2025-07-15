@@ -14,6 +14,7 @@ Ramalama with Kubernetes makes it incredibly easy to run your own ChatGPT-like A
 - 🎛️ **Stay in control** - Run models on your own infrastructure, no external API calls needed
 - 📦 **Choose your model** - Easy support for popular models like Qwen, Llama, Mistral, and more
 - 🔄 **Scale effortlessly** - Built-in CI/CD, multi-environment support, and GitOps compatibility
+- 🤖 **AI-Powered Assistance** - Integrate with OpenShift Lightspeed for intelligent cluster management
 
 ## 🌟 Key Features
 
@@ -23,6 +24,7 @@ Ramalama with Kubernetes makes it incredibly easy to run your own ChatGPT-like A
 - **🎨 Multiple Models**: Support for Qwen, Llama, Mistral, and custom models
 - **📊 Production Ready**: Security contexts, resource management, and monitoring
 - **🛠️ Easy Management**: Simple scripts to add, remove, and manage models
+- **🤖 OpenShift Lightspeed**: Built-in integration with Red Hat's AI assistant
 
 ## 🏗️ How It Works
 
@@ -31,17 +33,20 @@ graph LR
     A[🔧 Pick a Model] --> B[🐳 Build Container]
     B --> C[☸️ Deploy to K8s]
     C --> D[🌐 Use API]
+    D --> E[🤖 AI Assistant]
     
     style A fill:#e1f5fe
     style B fill:#f3e5f5
     style C fill:#e8f5e8
     style D fill:#fff3e0
+    style E fill:#fce4ec
 ```
 
 1. **Choose your model** from our collection or add your own
 2. **Build container images** with the model embedded
 3. **Deploy to Kubernetes** using our GitOps-ready manifests
 4. **Use the OpenAI-compatible API** to interact with your model
+5. **Get AI assistance** for cluster management with OpenShift Lightspeed
 
 That's it!
 
@@ -109,7 +114,7 @@ kubectl port-forward svc/qwen3-4b-ramalama-service 8080:8080
 curl -X POST http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "qwen3-4b-model",
+    "model": "default",
     "messages": [
       {"role": "user", "content": "Hello! How are you?"}
     ],
@@ -210,6 +215,69 @@ kubectl apply -f k8s/argocd/applicationset-example.yaml
 > [!IMPORTANT]  
 > Environment overlays (`k8s/overlays/dev` and `k8s/overlays/production`) are designed to work with ArgoCD's kustomize overlay feature, not standalone kubectl deployments. They are applied automatically when using the ArgoCD ApplicationSet.
 
+## 🤖 OpenShift Lightspeed Integration
+
+Get AI-powered assistance for your OpenShift cluster management! Deploy OpenShift Lightspeed with automatic integration to your ramalama models.
+
+**All OpenShift Lightspeed resources deploy to the `openshift-lightspeed` namespace** for proper isolation and management.
+
+### ⚡ Quick Deploy Lightspeed
+
+```bash
+# Deploy with ArgoCD (all models)
+oc apply -f k8s/lightspeed/argocd/applicationset-lightspeed.yaml
+
+# Deploy for specific model
+oc apply -k k8s/lightspeed/overlays/qwen3-4b
+
+# Deploy with auto-discovery
+oc apply -k k8s/lightspeed/overlays/auto-discovery
+
+# Verify deployment in the openshift-lightspeed namespace
+oc get all -n openshift-lightspeed
+```
+
+### 🌟 Features
+
+- **🧠 Natural Language Queries**: Ask questions about your cluster in plain English
+- **📝 YAML Generation**: Get help creating Kubernetes manifests
+- **🔧 Troubleshooting**: AI-powered assistance for debugging cluster issues
+- **🔍 Resource Investigation**: Understand what's happening in your cluster
+- **🔄 GitOps Ready**: Fully automated deployment with ArgoCD
+
+### 💬 Example Usage
+
+After deployment, you can ask OpenShift Lightspeed questions like:
+- *"How do I troubleshoot a pod that won't start?"*
+- *"Generate a deployment YAML for my application"*
+- *"Why is my service not accessible?"*
+- *"Show me how to configure resource limits"*
+
+### 🔧 Enhanced Model Management with Lightspeed
+
+Add new models with automatic Lightspeed integration:
+
+```bash
+# Add a model with Lightspeed overlay
+./scripts/add-model.sh \
+  --name "llama-7b" \
+  --description "Llama 7B Chat model" \
+  --model-gguf-url "hf://ggml-org/llama-7b/llama-7b.gguf" \
+  --model-file "/mnt/models/llama-7b.gguf/llama-7b.gguf" \
+  --create-lightspeed-overlay
+
+# Deploy both the model and Lightspeed (all models deploy to 'ramalama' namespace)
+oc apply -k k8s/models/llama-7b
+oc apply -k k8s/lightspeed/overlays/llama-7b
+```
+
+This automatically creates:
+- Model deployment configuration in the `ramalama` namespace
+- OpenShift Lightspeed overlay with automatic service discovery
+- Proper service discovery and integration across simplified namespace structure
+
+📚 **For detailed Lightspeed setup**, see [k8s/lightspeed/README.md](k8s/lightspeed/README.md)
+
 ## 🎛️ Model Management
 
 ### Adding New Models
@@ -220,12 +288,13 @@ Our model management system makes it super easy to add new models:
 # Interactive mode (recommended for beginners)
 ./scripts/add-model.sh --interactive
 
-# Command line mode
+# Command line mode with Lightspeed
 ./scripts/add-model.sh \
   --name "llama-7b" \
   --description "Llama 7B Chat model" \
   --model-gguf-url "hf://ggml-org/llama-7b/llama-7b.gguf" \
-  --model-file "/mnt/models/llama-7b.gguf/llama-7b.gguf"
+  --model-file "/mnt/models/llama-7b.gguf/llama-7b.gguf" \
+  --create-lightspeed-overlay
 ```
 
 ### Managing Models
@@ -252,6 +321,7 @@ ramalama-k8s/
 │   ├── 📁 base/                # Base configurations
 │   ├── 📁 overlays/            # Environment-specific settings
 │   ├── 📁 models/              # Model configurations
+│   ├── 📁 lightspeed/          # OpenShift Lightspeed integration
 │   └── 📁 argocd/              # GitOps examples
 ├── 📁 scripts/                 # Management scripts
 ├── 📁 models/                  # Model configurations

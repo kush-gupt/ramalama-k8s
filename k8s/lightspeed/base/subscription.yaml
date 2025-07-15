@@ -1,0 +1,17 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: lightspeed-operator
+  namespace: openshift-lightspeed
+  labels:
+    app.kubernetes.io/name: lightspeed-operator
+    app.kubernetes.io/part-of: openshift-lightspeed
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  channel: stable
+  installPlanApproval: Automatic
+  name: lightspeed-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  startingCSV: lightspeed-operator.v1.0.1 

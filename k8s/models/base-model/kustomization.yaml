@@ -6,7 +6,10 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 
+namespace: ramalama
+
 resources:
+  - namespace.yaml
   - ../../base
   - deployment.yaml
 
