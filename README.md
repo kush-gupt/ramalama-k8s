@@ -152,7 +152,7 @@ Due to operator timing dependencies, direct deployment requires two steps:
 oc apply -k k8s/lightspeed/base/operator-only
 
 # ⏳ Step 2: Wait for operator to be ready (this creates the required CRDs)
-oc wait --for=condition=Ready pod -l app.kubernetes.io/name=lightspeed-operator -n openshift-lightspeed --timeout=300s
+oc wait --for=condition=Available deployment -l app.kubernetes.io/created-by=lightspeed-operator -n openshift-lightspeed --timeout=100s
 
 # 🎯 Step 3: Apply complete configuration
 oc apply -k k8s/lightspeed/overlays/qwen3-4b
@@ -284,11 +284,11 @@ oc apply -f k8s/models/ramalama-namespace.yaml
 oc apply -k k8s/models/llama-7b
 
 # 2️⃣ Wait for model to be ready
-oc wait --for=condition=Ready pod -l model=llama-7b -n ramalama --timeout=300s
+oc wait --for=condition=Ready pod -l model=llama-7b -n ramalama --timeout=100s
 
 # 3️⃣ Then deploy Lightspeed (two-step process)
 oc apply -k k8s/lightspeed/base/operator-only
-oc wait --for=condition=Ready pod -l app.kubernetes.io/name=lightspeed-operator -n openshift-lightspeed --timeout=100s
+oc wait --for=condition=Available deployment -l app.kubernetes.io/created-by=lightspeed-operator -n openshift-lightspeed --timeout=100s
 oc apply -k k8s/lightspeed/overlays/llama-7b
 ```
 
