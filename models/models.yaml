@@ -77,6 +77,25 @@ models:
       requests:
         memory: "16Gi"
         cpu: "4"
+
+  gemma-3n-e4b:
+    name: "Gemma 3N E4B"
+    description: "All-in-one Ramalama server with embedded Gemma 3N E4B Q4_K_XL.gguf Unsloth model."
+    model_source: "gemma-3n-e4b-source"
+    model_gguf_url: "hf://unsloth/gemma-3n-E4B-it-GGUF/gemma-3n-E4B-it-UD-Q4_K_XL.gguf"
+    model_file: "/mnt/models/gemma-3n-E4B-it-UD-Q4_K_XL.gguf/gemma-3n-E4B-it-UD-Q4_K_XL.gguf"
+    maintainer: "Kush Gupta"
+    parameters:
+      ctx_size: 32000
+      threads: 16
+      temp: 1.0
+      top_k: 64
+      top_p: 0.95
+      cache_reuse: 256
+    resources:
+      requests:
+        memory: "4Gi"
+        cpu: "2"
 # Template configurations for common model families
 templates:
   llama:
