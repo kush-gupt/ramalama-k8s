@@ -1,0 +1,38 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: ramalama-gemma-3n-e4b
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+
+resources:
+- ../base-model
+
+namePrefix: "gemma-3n-e4b-"
+
+commonLabels:
+  app.kubernetes.io/instance: "gemma-3n-e4b"
+  model: "gemma-3n-e4b"
+
+configMapGenerator:
+- name: model-config
+  behavior: replace
+  literals:
+  - MODEL_NAME=gemma-3n-e4b
+  - MODEL_FILE=/mnt/models/gemma-3n-E4B-it-UD-Q4_K_XL.gguf/gemma-3n-E4B-it-UD-Q4_K_XL.gguf
+  - ALIAS=gemma-3n-e4b-model
+- name: ramalama-config
+  behavior: merge
+  literals:
+  - CTX_SIZE=20048
+  - THREADS=14
+  - TEMP=1.0
+  - TOP_K=64
+  - TOP_P=0.95
+  - CACHE_REUSE=256
+
+images:
+- name: MODEL_IMAGE
+  newName: "ghcr.io/kush-gupt/gemma-3n-e4b-ramalama"
+  newTag: latest 

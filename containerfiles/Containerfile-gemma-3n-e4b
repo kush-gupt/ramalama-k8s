@@ -1,0 +1,18 @@
+ARG BASE_IMAGE_NAME
+ARG MODEL_SOURCE_NAME
+FROM ${BASE_IMAGE_NAME}
+
+ARG MODEL_SOURCE_NAME
+
+# Copy the entire /models directory from the model source
+# into the final application image at /mnt/models.
+COPY --from=${MODEL_SOURCE_NAME} /models /mnt/models
+
+# This is a sanity check for OpenShift's random user ID.
+USER root
+RUN chmod -R a+rX /mnt/models
+USER 1001
+
+# Optional: Add labels to describe your new all-in-one image
+LABEL maintainer="Kush Gupta"
+LABEL description="gemma-3n-E4B-it-UD-Q4_K_XL.gguf from Unsloth"

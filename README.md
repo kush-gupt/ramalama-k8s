@@ -8,22 +8,22 @@
 
 ## What is this?
 
-Ramalama with Kubernetes makes it incredibly easy to run your own ChatGPT-like AI models in Kubernetes or OpenShift. Whether you're a developer, DevOps engineer, or AI enthusiast, this project helps you:
+[Ramalama](https://github.com/containers/ramalama) with Kubernetes makes it incredibly easy to run your own ChatGPT-like AI models in Podman, Kubernetes or OpenShift. Whether you're a developer, DevOps engineer, or AI enthusiast, this project helps you:
 
 - **Get started quickly** - Deploy AI models in minutes, not hours
 - **Use familiar tools** - Works with Docker, Kubernetes, and standard GitOps workflows
-- **Production ready** - Includes monitoring, scaling, and security best practices
+- **Kubernetes ready** - Includes monitoring, scaling, and security best practices
 - **Model variety** - Support for multiple LLM models and sizes
 - **Enterprise grade** - Built for OpenShift with proper RBAC and security policies
 
 ## Features
 
-### **GitOps Architecture**
+### **Architecture**
 ```mermaid
 graph LR
-    A[📝 Git Repo] --> B[🔄 ArgoCD]
-    B --> C[☸️ Kubernetes]
-    C --> D[🤖 LLM Models]
+    A[📝 Git Repo] --> B[🔄 Build Modelcars]
+    B --> C[☸️ Podman or Kubernetes]
+    C --> D[🤖 LLM Model serving OpenAI-like API]
     
     style A fill:#e1f5fe
     style B fill:#f3e5f5
@@ -33,7 +33,7 @@ graph LR
 
 - **Declarative Deployments** - Everything as code with Kustomize
 - **Auto-scaling** - Horizontal pod autoscaling based on demand  
-- **Security First** - Pod security standards and RBAC
+- **Security First** - SELinux, Kubernetes security standards and RBAC
 - **Monitoring Ready** - Prometheus metrics and health checks
 
 ### 🎭 **Multiple Model Support**
@@ -43,7 +43,8 @@ graph LR
 | **Qwen 3 1.7B** | Small | 💬 Chat, Q&A | ✅ Ready |
 | **Qwen 3 4B** | Medium | 💼 Business tasks | ✅ Ready |  
 | **Qwen 3 30B** | Large | 🧠 Complex reasoning | ✅ Ready |
-| **DeepSeek R1** | 8B | 🔬 Research tasks | ✅ Ready |
+| **DeepSeek R1 Qwen3** | 8B | 🔬 Research tasks | ✅ Ready |
+| **Custom** | Any | Whatever you want! | ✅ Ready |
 
 ### **Developer Experience**
 
@@ -73,7 +74,7 @@ cd ramalama-k8s
 
 ### 2️⃣ Deploy Your First Model
 
-#### **Single Model (Recommended)**
+#### **Single Model with OpenShift (Recommended)**
 ```bash
 # 🏗️ Create namespace
 oc apply -f k8s/models/ramalama-namespace.yaml
@@ -85,13 +86,9 @@ oc apply -k k8s/models/qwen3-1b
 oc get pods -l model=qwen3-1b -n ramalama
 ```
 
-#### **Environment-Based Deployment**
+#### **Or with Podman**
 ```bash
-# 🧪 Development environment
-oc apply -k k8s/overlays/dev
-
-# 🏭 Production environment  
-oc apply -k k8s/overlays/production
+podman run -p 8080:8080 ghcr.io/kush-gupt/qwen3-1b-ramalama /usr/bin/llama-server --port 8080 --model /mnt/models/Qwen3-1.7B-UD-Q4_K_XL.gguf/Qwen3-1.7B-UD-Q4_K_XL.gguf
 ```
 
 ### 3️⃣ Test Your Model
@@ -274,7 +271,9 @@ graph TB
 ./scripts/remove-model.sh llama-7b --force
 ```
 
-### **Deployment Order (Important!)**
+### **Deployment Order**
+> [!IMPORTANT]  
+> **Model First, Then Lightspeed**: Deploy your models before deploying OpenShift Lightspeed to ensure proper service discovery and connectivity.
 
 When deploying both models and OpenShift Lightspeed:
 
@@ -291,9 +290,6 @@ oc apply -k k8s/lightspeed/base/operator-only
 oc wait --for=condition=Available deployment -l app.kubernetes.io/created-by=lightspeed-operator -n openshift-lightspeed --timeout=100s
 oc apply -k k8s/lightspeed/overlays/llama-7b
 ```
-
-> [!IMPORTANT]  
-> **Model First, Then Lightspeed**: Always deploy your models before deploying OpenShift Lightspeed to ensure proper service discovery and connectivity.
 
 ## **Production-like Deployment**
 

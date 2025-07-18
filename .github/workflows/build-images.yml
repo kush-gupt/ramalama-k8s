@@ -458,7 +458,7 @@ jobs:
       - name: Log in to Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
-      - name: Build and push source image with Ramalama
+      - name: Build source image with Ramalama
         run: |
           OWNER_PATH="${{ needs.determine-image-owner.outputs.registry_owner_path }}"
           MODEL_SOURCE_URL="${OWNER_PATH}/${{ matrix.model_source }}:latest"
@@ -470,9 +470,15 @@ jobs:
           
           # Run ramalama convert
           ramalama --store /home/runner/ramalama/store convert ${{ matrix.model_gguf_url }} oci://${MODEL_SOURCE_URL}
-          
-          # Push the image that was created by ramalama
-          podman push ${MODEL_SOURCE_URL}
+
+      - name: Push Source Image (with retry)
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 30
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: |
+            podman push ${MODEL_SOURCE_URL}
           
       - name: Set success flag
         id: set-success
