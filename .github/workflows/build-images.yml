@@ -478,6 +478,8 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 30
           command: |
+            OWNER_PATH="${{ needs.determine-image-owner.outputs.registry_owner_path }}"
+            MODEL_SOURCE_URL="${OWNER_PATH}/${{ matrix.model_source }}:latest"
             podman push ${MODEL_SOURCE_URL}
           
       - name: Set success flag
