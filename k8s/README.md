@@ -13,9 +13,6 @@ This directory contains GitOps-compatible Kubernetes manifests for deploying Ram
 - **🔧 Management**: Single point of configuration and monitoring
 - **🚫 Conflict Prevention**: Avoids namespace prefix conflicts from Kustomize
 
-### Model Path Changes
-**Note**: All configurations in this directory now use `/mnt/models/` paths instead of `/models/` for model files. This change provides better alignment with container runtime expectations and default execution behavior. If you have existing deployments, you may need to update your configurations and rebuild your container images.
-
 **Standard Model Path Format**: All model files must be referenced using the format:
 ```
 /mnt/models/Model-Name.gguf/Model-Name.gguf
@@ -58,27 +55,6 @@ k8s/
     ├── application-example.yaml
     └── applicationset-example.yaml
 ```
-
-## Features
-
-### GitOps Compatibility
-- **Declarative Configuration**: All resources defined as code
-- **OpenShift GitOps Sync Waves**: Proper deployment ordering
-- **Simplified Namespace Structure**: All models deploy to `ramalama` namespace
-- **Automated Deployment**: No manual kubectl required
-
-### Kustomize Structure
-- **Base + Overlays**: Reusable base with environment-specific patches
-- **ConfigMap Generation**: Dynamic configuration management
-- **Image Management**: Centralized image tag management
-- **Resource Patching**: Environment-specific resource requests
-
-### Security & Best Practices
-- **Pod Security Standards**: Restricted security context
-- **Resource Constraints**: Memory and CPU requests
-- **Health Checks**: Liveness and readiness probes
-- **Non-root Execution**: Secure container runtime
-
 ## Quick Start
 
 ### 1. Deploy with Kustomize (Direct)
@@ -86,7 +62,7 @@ k8s/
 #### Single Model Deployment
 ```bash
 # Create the shared namespace first
-kubectl apply -f k8s/models/ramalama-namespace.yaml
+kubectl create namespace ramalama
 
 # Deploy a specific model
 kubectl apply -k k8s/models/qwen3-4b
@@ -95,33 +71,12 @@ kubectl apply -k k8s/models/qwen3-4b
 kubectl get all -l model=qwen3-4b -n ramalama
 ```
 
-#### Environment-Specific Deployment
-```bash
-# Development environment (includes namespace creation)
-kubectl apply -k k8s/overlays/dev
-
-# Production environment (includes namespace creation)
-kubectl apply -k k8s/overlays/production
-
-# Check deployment
-kubectl get pods -n ramalama
-```
-
-> [!TIP]  
-> **Environment overlays** include base model deployment and are perfect for testing different resource allocations and configurations.
-
 ### 2. Deploy with ArgoCD
 
 #### Single Model Application
 ```bash
 # Apply the example application
 kubectl apply -f k8s/argocd/application-example.yaml
-```
-
-#### Multiple Models with ApplicationSet
-```bash
-# Deploy all models across all environments
-kubectl apply -f k8s/argocd/applicationset-example.yaml
 ```
 
 ## Model Management
@@ -208,9 +163,6 @@ spec:
     namespace: ramalama
 ```
 
-> [!IMPORTANT]  
-> **Namespace Consistency**: All Applications should target the `ramalama` namespace for proper service discovery and Lightspeed integration.
-
 ### ApplicationSet Pattern
 For managing multiple models across environments automatically:
 
@@ -258,55 +210,6 @@ spec:
 - Minimal attack surface
 - Container isolation
 
-## Troubleshooting
-
-### Common Issues
-
-1. **Namespace Creation Issues**
-   ```bash
-   # Ensure the ramalama namespace exists
-   oc apply -f k8s/models/ramalama-namespace.yaml
-   
-   # Or create manually
-   oc create project ramalama
-   ```
-
-2. **Image Pull Errors**
-   ```bash
-   # Check image configuration
-   oc get deployment -o yaml -n ramalama | grep image
-   
-   # Check pod events
-   oc describe pod -l app.kubernetes.io/name=ramalama -n ramalama
-   ```
-
-3. **Configuration Issues**
-   ```bash
-   # Verify ConfigMap generation
-   oc get configmap -l app.kubernetes.io/name=ramalama -n ramalama
-   
-   # Check ConfigMap content
-   oc describe configmap ramalama-config -n ramalama
-   ```
-
-4. **ArgoCD Sync Issues**
-   ```bash
-   # Check application status
-   oc get application ramalama-qwen3-4b-dev -n openshift-gitops -o yaml
-   
-   # Force sync if needed
-   argocd app sync ramalama-qwen3-4b-dev
-   ```
-
-5. **Service Discovery Problems**
-   ```bash
-   # Check services in ramalama namespace
-   oc get svc -l app.kubernetes.io/name=ramalama -n ramalama
-   
-   # Test service connectivity
-   oc port-forward -n ramalama svc/qwen3-4b-ramalama-service 8080:8080
-   ```
-
 ### Debugging Commands
 
 ```bash
@@ -322,41 +225,6 @@ oc get all -l app.kubernetes.io/name=ramalama -n ramalama
 # View logs
 oc logs -l model=qwen3-4b -n ramalama --tail=100
 ```
-
-## Migration from Older Deployments
-
-If migrating from the old deployment structure:
-
-1. **Backup existing deployments**
-   ```bash
-   oc get all -A -l app.kubernetes.io/name=ramalama -o yaml > backup.yaml
-   ```
-
-2. **Remove old deployments with incorrect namespaces**
-   ```bash
-   # Remove any incorrectly named projects/namespaces
-   oc delete project qwen3-1b-ramalama qwen3-4b-ramalama --ignore-not-found
-   ```
-
-3. **Generate new kustomizations** using updated scripts
-   ```bash
-   ./scripts/generate-from-config.py
-   ```
-
-4. **Test in dev environment** first
-   ```bash
-   oc apply -k k8s/overlays/dev
-   ```
-
-5. **Update OpenShift GitOps applications** to use new paths
-   ```bash
-   # Update application destination namespace to "ramalama"
-   oc patch application ramalama-qwen3-4b-dev -n openshift-gitops --type merge -p '{"spec":{"destination":{"namespace":"ramalama"}}}'
-   ```
-
-6. **Remove old deployment files**
-
-The migration scripts handle this automatically when regenerating configurations.
 
 ## Best Practices
 
