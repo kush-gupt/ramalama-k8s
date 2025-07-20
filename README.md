@@ -10,8 +10,8 @@
 
 [Ramalama](https://github.com/containers/ramalama) with Kubernetes makes it incredibly easy to run your own ChatGPT-like AI models in Podman, Kubernetes or OpenShift. Whether you're a developer, DevOps engineer, or AI enthusiast, this project helps you:
 
-- **Get started quickly** - Deploy AI models in minutes, not hours
-- **Use familiar tools** - Works with Docker, Kubernetes, and standard GitOps workflows
+- **Quick Setup** - One command deployment of AI Models
+- **Use familiar tools** - Works with Podman, Kubernetes, and standard GitOps workflows
 - **Kubernetes ready** - Includes monitoring, scaling, and security best practices
 - **Model variety** - Support for multiple LLM models and sizes
 - **Enterprise grade** - Built for OpenShift with proper RBAC and security policies
@@ -31,27 +31,28 @@ graph LR
     style D fill:#fff3e0
 ```
 
-- **Declarative Deployments** - Everything as code with Kustomize
-- **Auto-scaling** - Horizontal pod autoscaling based on demand  
+- **Declarative Deployments** - Everything as code with Kustomize and GitHub Actions for Modelcars
 - **Security First** - SELinux, Kubernetes security standards and RBAC
 - **Monitoring Ready** - Prometheus metrics and health checks
 
 ### 🎭 **Multiple Model Support**
 
-| Model | Size | Use Case | Status |
-|-------|------|----------|---------|
-| **Qwen 3 1.7B** | Small | 💬 Chat, Q&A | ✅ Ready |
-| **Qwen 3 4B** | Medium | 💼 Business tasks | ✅ Ready |  
-| **Qwen 3 30B** | Large | 🧠 Complex reasoning | ✅ Ready |
-| **DeepSeek R1 Qwen3** | 8B | 🔬 Research tasks | ✅ Ready |
-| **Custom** | Any | Whatever you want! | ✅ Ready |
+| Model | Size | Status |
+|-------|------|--------|
+| **Qwen 3 1.7B**       | Small   | ✅ Ready |
+| **Gemma 3n E4B**      | Small   | ✅ Ready |
+| **Qwen 3 4B**         | Medium  | ✅ Ready |
+| **Qwen 3 30B**        | Large   | ✅ Ready |
+| **DeepSeek R1 Qwen3** | 8B      | ✅ Ready |
+| **Custom**            | Any!    | ✅ Ready |
 
-### **Developer Experience**
+### 🔐 **Security Features**
 
-- **Quick Setup** - One command deployment
-- **Easy Configuration** - YAML-based model definitions
-- **API Compatible** - OpenAI-compatible endpoints
-- **Auto-discovery** - Automatic service discovery for OpenShift Lightspeed
+- **Pod Security Standards** - Restricted policies enforced
+- **Non-root execution** - All containers run as non-root user
+- **RBAC** - Role-based access control
+- **Network Policies** - Micro-segmentation ready
+- **Security Context** - Dropped capabilities and seccomp
 
 ## 🚀 Quick Start
 
@@ -63,7 +64,7 @@ graph LR
 
 - **Kubernetes/OpenShift cluster** with admin access
 - **Container runtime** (Podman recommended, Docker works if you insist)
-- **kubectl/oc CLI** configured
+- **kubectl or oc CLI** installed & configured
 
 ### 1️⃣ Clone and Explore
 
@@ -76,8 +77,10 @@ cd ramalama-k8s
 
 #### **Single Model with OpenShift (Recommended)**
 ```bash
-# 🏗️ Create namespace
+# 🏗️ Create namespace with:
 oc apply -f k8s/models/ramalama-namespace.yaml
+# Or this:
+oc create namespace ramalama
 
 # 🚀 Deploy Qwen 3 1B model on CPU 
 oc apply -k k8s/models/qwen3-1b
@@ -86,8 +89,12 @@ oc apply -k k8s/models/qwen3-1b
 oc get pods -l model=qwen3-1b -n ramalama
 ```
 
-#### **Or with Podman**
+#### **Or with Podman on Linux directly**
 ```bash
+# At this point, you're better off using Ramalama directly if you just want inference on Linux:
+ramalama serve hf://unsloth/Qwen3-1.7B-GGUF/Qwen3-1.7B-UD-Q4_K_XL.gguf
+
+# But for directly testing the images built here:
 podman run -p 8080:8080 ghcr.io/kush-gupt/qwen3-1b-ramalama /usr/bin/llama-server --port 8080 --model /mnt/models/Qwen3-1.7B-UD-Q4_K_XL.gguf/Qwen3-1.7B-UD-Q4_K_XL.gguf
 ```
 
@@ -113,17 +120,7 @@ curl http://qwen3-1b-ramalama-service.ramalama.svc.cluster.local:8080/v1/models
 exit
 ```
 
-**Alternative: One-liner test without interactive pod**
-```bash
-# 🚀 Quick test without entering the pod
-oc run model-test --image=curlimages/curl:8.10.1 --rm -n ramalama \
-  --command -- curl -X POST \
-  http://qwen3-1b-ramalama-service.ramalama.svc.cluster.local:8080/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{"model": "default", "messages": [{"role": "user", "content": "Hello! How are you?"}], "temperature": 0.7}'
-```
-
-## 🎛️ **OpenShift Lightspeed Integration**
+## **OpenShift Lightspeed Integration**
 
 ![OpenShift Lightspeed](https://img.shields.io/badge/OpenShift%20Lightspeed-Ready-brightgreen?logo=redhatopenshift)
 
@@ -132,9 +129,9 @@ Turn your deployed models into an AI-powered OpenShift assistant!
 ### 📋 **Prerequisites**
 ```bash
 # ✅ Ensure you have at least one model running first
-oc get pods -l app.kubernetes.io/name=ramalama -n ramalama
+oc get pods -n ramalama
 
-# 🚀 If no project or models are deployed, deploy one first:
+# 🚀 If no project or models are deployed, deploy them first:
 oc apply -f k8s/models/ramalama-namespace.yaml
 oc apply -k k8s/models/qwen3-4b
 ```
@@ -151,13 +148,13 @@ oc apply -k k8s/lightspeed/base/operator-only
 # ⏳ Step 2: Wait for operator to be ready (this creates the required CRDs)
 oc wait --for=condition=Available deployment -l app.kubernetes.io/created-by=lightspeed-operator -n openshift-lightspeed --timeout=100s
 
-# 🎯 Step 3: Apply complete configuration
+# 🎯 Step 3: Link lightspeed to the ramalama service
 oc apply -k k8s/lightspeed/overlays/qwen3-4b
 ```
 
 #### **Option 2: GitOps Deployment (If you have it installed)**
 ```bash
-# 🔥 Deploy with ArgoCD - single command handles timing automatically
+# 🔥 Deploy with ArgoCD - single command that should handle timing automatically
 oc apply -f k8s/lightspeed/argocd/application-qwen3-4b.yaml
 
 # ✅ Monitor deployment
@@ -244,7 +241,7 @@ graph TB
 # 🎯 Interactive mode
 ./scripts/add-model.sh --interactive
 
-# 🚀 Command line mode with Lightspeed generation
+# 🚀 Command line mode with Lightspeed generation w/llama-7b as an example
 ./scripts/add-model.sh \
   --name "llama-7b" \
   --description "Llama 7B Chat model" \
@@ -269,73 +266,6 @@ graph TB
 ### **Remove Models**
 ```bash
 ./scripts/remove-model.sh llama-7b --force
-```
-
-### **Deployment Order**
-> [!IMPORTANT]  
-> **Model First, Then Lightspeed**: Deploy your models before deploying OpenShift Lightspeed to ensure proper service discovery and connectivity.
-
-When deploying both models and OpenShift Lightspeed:
-
-```bash
-# 1️⃣ Deploy model first
-oc apply -f k8s/models/ramalama-namespace.yaml
-oc apply -k k8s/models/llama-7b
-
-# 2️⃣ Wait for model to be ready
-oc wait --for=condition=Ready pod -l model=llama-7b -n ramalama --timeout=100s
-
-# 3️⃣ Then deploy Lightspeed (two-step process)
-oc apply -k k8s/lightspeed/base/operator-only
-oc wait --for=condition=Available deployment -l app.kubernetes.io/created-by=lightspeed-operator -n openshift-lightspeed --timeout=100s
-oc apply -k k8s/lightspeed/overlays/llama-7b
-```
-
-## **Production-like Deployment**
-
-### **With OpenShift GitOps**
-
-![GitOps](https://img.shields.io/badge/GitOps-Enabled-green?logo=argo)
-
-```bash
-# 🔄 Single model application
-oc apply -f k8s/argocd/application-example.yaml
-
-# 🌍 Multi-environment ApplicationSet
-oc apply -f k8s/argocd/applicationset-example.yaml
-```
-
-### 📊 **Resource Requirements**
-
-| Model Size | Memory | CPU | GPU | Storage |
-|------------|--------|-----|-----|---------|
-| **1.7B** | 4Gi | 2 cores | Optional | 10Gi |
-| **4B** | 8Gi | 4 cores | Optional | 20Gi |
-| **8B** | 16Gi | 8 cores | Recommended | 40Gi |
-| **30B** | 32Gi | 16 cores | Required | 80Gi |
-
-### 🔐 **Security Features**
-
-- **Pod Security Standards** - Restricted policies enforced
-- **Non-root execution** - All containers run as non-root user
-- **RBAC** - Role-based access control
-- **Network Policies** - Micro-segmentation ready
-- **Security Context** - Dropped capabilities and seccomp
-
-## 📁 **Project Structure**
-
-```
-ramalama-k8s/
-├── 📦 containerfiles/           # Container build definitions
-├── ☸️ k8s/                      # Kubernetes manifests
-│   ├── 🏗️ base/                 # Base Kustomize resources  
-│   ├── 🎭 models/               # Model-specific configs
-│   ├── 🌍 overlays/             # Environment overlays
-│   ├── 🎯 lightspeed/           # OpenShift Lightspeed integration
-│   └── 🔄 argocd/               # GitOps applications
-├── 🤖 models/                   # Model configurations
-├── 🛠️ scripts/                  # Management scripts
-└── 📚 docs/                     # Documentation
 ```
 
 ## **Configuration**
@@ -369,30 +299,6 @@ LOG_COLORS=true
 NO_WARMUP=false
 JINJA=true
 ```
-
-## **Monitoring & Troubleshooting**
-
-### **Health Checks**
-```bash
-# ✅ Check model health
-oc get pods -l app.kubernetes.io/name=ramalama -n ramalama
-
-# 📝 View logs
-oc logs -l model=qwen3-4b -n ramalama --tail=100
-
-# 🔧 Debug service connectivity
-oc port-forward -n ramalama svc/qwen3-4b-ramalama-service 8080:8080
-curl http://localhost:8080/v1/models
-```
-
-### 🆘 **Common Issues**
-
-| Issue | Solution |
-|-------|----------|
-| 🚫 Pod not starting | Check resource limits and node capacity |
-| 🔌 API not responding | Verify port-forward and service endpoints |  
-| 🐌 Slow responses | Increase CPU/memory or enable GPU |
-| 📦 Image pull errors | Check registry credentials and image tags |
 
 ## 🤝 **Contributing**
 
