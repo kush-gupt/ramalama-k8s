@@ -163,13 +163,11 @@ configure_common_flags() {
 }
 
 clone_and_build_llama_cpp() {
-  local llama_cpp_sha="97340b4c9924be86704dbf155e97c8319849ee19"
   local install_prefix
   install_prefix=$(set_install_prefix)
   git clone https://github.com/ggml-org/llama.cpp
   cd llama.cpp
   git submodule update --init --recursive
-  git reset --hard "$llama_cpp_sha"
   cmake_steps "${common_flags[@]}"
   install -m 755 build/bin/rpc-server "$install_prefix"/bin/rpc-server
   cd ..
