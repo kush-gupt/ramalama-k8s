@@ -56,7 +56,7 @@ graph LR
 
 ## 🚀 Quick Start
 
-[![Watch the tutorial](https://img.youtube.com/vi/o-3_nveO2_E/hqdefault.jpg)](https://www.youtube.com/watch?v=32npej9-mlI)
+[![Watch the tutorial](https://img.youtube.com/vi/32npej9-mlI/hqdefault.jpg)](https://www.youtube.com/watch?v=32npej9-mlI)
 
 ### Prerequisites
 
