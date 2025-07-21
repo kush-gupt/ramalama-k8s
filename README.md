@@ -56,6 +56,8 @@ graph LR
 
 ## 🚀 Quick Start
 
+[![Watch the tutorial](https://img.youtube.com/vi/o-3_nveO2_E/hqdefault.jpg)](https://www.youtube.com/watch?v=32npej9-mlI)
+
 ### Prerequisites
 
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-1.24+-blue?logo=kubernetes)
