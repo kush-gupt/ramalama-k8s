@@ -56,6 +56,8 @@ graph LR
 
 ## 🚀 Quick Start
 
+You can follow the video tutorial below using the OpenShift console, or the documented steps:
+
 [![Watch the tutorial](https://img.youtube.com/vi/32npej9-mlI/hqdefault.jpg)](https://www.youtube.com/watch?v=32npej9-mlI)
 
 ### Prerequisites
