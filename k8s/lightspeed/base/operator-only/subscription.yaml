@@ -4,8 +4,8 @@ metadata:
   name: lightspeed-operator
   namespace: openshift-lightspeed
   labels:
-    app.kubernetes.io/name: lightspeed-operator
-    app.kubernetes.io/part-of: openshift-lightspeed
+    app.kubernetes.io/name: openshift-lightspeed
+    operators.coreos.com/lightspeed-operator.openshift-lightspeed: ''
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
 spec:
@@ -14,4 +14,4 @@ spec:
   name: lightspeed-operator
   source: redhat-operators
   sourceNamespace: openshift-marketplace
-  startingCSV: lightspeed-operator.v1.0.1 
+  startingCSV: lightspeed-operator.v1.0.1

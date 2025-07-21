@@ -11,27 +11,6 @@ The model management system consists of several components:
 3. **Template system for consistency**
 4. **Automated generation of all required files**
 
-## Important Path Changes
-
-**Note**: This repository now uses `/mnt/models/` paths instead of `/models/` for all model files. This change provides better alignment with container runtime expectations and default execution behavior.
-
-### What Changed
-
-- **Default model file paths**: All examples and defaults now use `/mnt/models/`
-- **Container images**: Models are copied to `/mnt/models/` inside containers
-- **Configuration files**: All `.conf` files and `models.yaml` use `/mnt/models/` paths
-- **Kubernetes deployments**: All k8s configurations reference `/mnt/models/` paths
-
-### Migration
-
-If you have existing configurations:
-
-1. **Update model file paths** in your configurations to use `/mnt/models/` instead of `/models/`
-2. **Update deployment commands** to use the shared namespace approach
-3. **Rebuild container images** with the updated Containerfiles
-
-The CLI parameters still accept any path you specify, so you can override the defaults if needed.
-
 ## Quick Start
 
 ### Adding a New Model (Interactive)
@@ -66,19 +45,6 @@ kubectl apply -k k8s/models/llama-7b
 
 # Check deployment
 kubectl get all -l model=llama-7b -n ramalama
-```
-
-#### Environment-Specific Testing
-
-```bash
-# Development environment (includes namespace creation and base model)
-kubectl apply -k k8s/overlays/dev
-
-# Production environment (includes namespace creation and base model)
-kubectl apply -k k8s/overlays/production
-
-# Check deployment
-kubectl get pods -n ramalama
 ```
 
 ### Listing All Models
@@ -194,26 +160,6 @@ When you add a model, the following files are automatically generated:
 - **Location**: `models/{model-name}.conf`
 - **Purpose**: Shell-compatible configuration file
 - **Usage**: Can be sourced by scripts for automation
-
-## Templates
-
-Templates provide default configurations for common model families:
-
-### Available Templates
-
-- **llama**: Optimized for Llama family models
-- **mistral**: Optimized for Mistral family models
-
-### Using Templates
-
-```yaml
-models:
-  my-llama-model:
-    name: "My Llama Model"
-    template: "llama"
-    resource_size: "medium"  # Uses medium resources from llama template
-    # Other specific configurations override template defaults
-```
 
 ## Scripts Reference
 
@@ -428,30 +374,6 @@ podman build -f containerfiles/Containerfile-{model-name} \
   --build-arg MODEL_SOURCE_NAME="model-source-image" \
   -t test-image .
 ```
-
-## Migration from Manual Process
-
-If you have existing manually created files:
-
-1. **Backup existing files**:
-   ```bash
-   cp -r containerfiles containerfiles.backup
-   cp -r k8s k8s.backup
-   cp .github/workflows/build-images.yml .github/workflows/build-images.yml.backup
-   ```
-
-2. **Create YAML configuration** for existing models in `models/models.yaml`
-
-3. **Generate new files**:
-   ```bash
-   ./scripts/generate-from-config.py
-   ```
-
-   This will create the new GitOps-compatible structure under `k8s/models/`
-
-4. **Compare and verify** the generated files match your requirements
-
-5. **Test the build process** before committing
 
 ## Contributing
 

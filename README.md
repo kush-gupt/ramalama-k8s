@@ -25,10 +25,10 @@ graph LR
     B --> C[☸️ Podman or Kubernetes]
     C --> D[🤖 LLM Model serving OpenAI-like API]
     
-    style A fill:#e1f5fe
-    style B fill:#f3e5f5
-    style C fill:#e8f5e8
-    style D fill:#fff3e0
+    style A fill:#e1f5fe, color:#000
+    style B fill:#f3e5f5, color:#000
+    style C fill:#e8f5e8, color:#000
+    style D fill:#fff3e0, color:#000
 ```
 
 - **Declarative Deployments** - Everything as code with Kustomize and GitHub Actions for Modelcars
@@ -102,18 +102,12 @@ podman run -p 8080:8080 ghcr.io/kush-gupt/qwen3-1b-ramalama /usr/bin/llama-serve
 
 ```bash
 # 🧪 Deploy a test pod in the cluster to test service connectivity
-oc run model-test --image=curlimages/curl:8.10.1 --rm -i --tty -n ramalama -- sh
+oc run model-test --image=quay.io/ramalama/ramalama:latest --rm -i --tty -n ramalama -- sh
 
 # 💬 Inside the test pod, test the chat API (replace 'qwen3-1b' with your model name)
-curl -X POST http://qwen3-1b-ramalama-service.ramalama.svc.cluster.local:8080/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "default",
-    "messages": [{"role": "user", "content": "Hello! How are you?"}],
-    "temperature": 0.7
-  }'
+ramalama chat --url http://qwen3-1b-ramalama-service.ramalama.svc.cluster.local:8080/v1
 
-# 🔍 Test model availability
+# 🔍 Test model availability through curl
 curl http://qwen3-1b-ramalama-service.ramalama.svc.cluster.local:8080/v1/models
 
 # 📋 Exit the test pod (it will be automatically deleted due to --rm flag)
@@ -142,7 +136,7 @@ oc apply -k k8s/models/qwen3-4b
 Due to operator timing dependencies, direct deployment requires two steps:
 
 ```bash
-# 🔧 Step 1: Install operator and create CRDs
+# 🔧 Step 1: Install ns and operator subscription (run twice if you don't have an openshift-lightspeed namespace)
 oc apply -k k8s/lightspeed/base/operator-only
 
 # ⏳ Step 2: Wait for operator to be ready (this creates the required CRDs)
