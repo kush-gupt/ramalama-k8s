@@ -20,13 +20,13 @@ configMapGenerator:
   behavior: replace
   literals:
   - MODEL_NAME=qwen3-30b-a3b-instruct-2507
-  - MODEL_FILE=/mnt/models/Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf/Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf
+  - MODEL_FILE=/mnt/models/Qwen3-30B-A3B-Instruct-2507-UD-Q3_K_XL.gguf/Qwen3-30B-A3B-Instruct-2507-UD-Q3_K_XL.gguf
   - ALIAS=qwen3-30b-a3b-instruct-2507-model
 - name: ramalama-config
   behavior: merge
   literals:
-  - CTX_SIZE=16384
-  - THREADS=14
+  - CTX_SIZE=20048
+  - THREADS=16
   - TEMP=0.7
   - TOP_K=20
   - TOP_P=0.8
