@@ -15,4 +15,4 @@ USER 1001
 
 # Optional: Add labels to describe your new all-in-one image
 LABEL maintainer="Kush Gupta"
-LABEL description="Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf from Unsloth"
+LABEL description="Qwen3-30B-A3B-Instruct-2507-UD-Q3_K_XL.gguf from Unsloth"
