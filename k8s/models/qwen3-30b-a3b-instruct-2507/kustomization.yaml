@@ -1,0 +1,38 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: ramalama-qwen3-30b-a3b-instruct-2507
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+
+resources:
+- ../base-model
+
+namePrefix: "qwen3-30b-a3b-instruct-2507-"
+
+commonLabels:
+  app.kubernetes.io/instance: "qwen3-30b-a3b-instruct-2507"
+  model: "qwen3-30b-a3b-instruct-2507"
+
+configMapGenerator:
+- name: model-config
+  behavior: replace
+  literals:
+  - MODEL_NAME=qwen3-30b-a3b-instruct-2507
+  - MODEL_FILE=/mnt/models/Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf/Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf
+  - ALIAS=qwen3-30b-a3b-instruct-2507-model
+- name: ramalama-config
+  behavior: merge
+  literals:
+  - CTX_SIZE=16384
+  - THREADS=14
+  - TEMP=0.7
+  - TOP_K=20
+  - TOP_P=0.8
+  - CACHE_REUSE=256
+
+images:
+- name: MODEL_IMAGE
+  newName: "ghcr.io/kush-gupt/qwen3-30b-a3b-instruct-2507-ramalama"
+  newTag: latest 

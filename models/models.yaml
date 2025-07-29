@@ -59,6 +59,25 @@ models:
         memory: "16Gi"
         cpu: "4"
 
+  qwen3-30b-a3b-instruct-2507:
+    name: "Qwen 3 30B A3B Instruct 2507"
+    description: "All-in-one Ramalama server with embedded Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf Unsloth model."
+    model_source: "qwen3-30b-a3b-instruct-2507-source"
+    model_gguf_url: "hf://unsloth/Qwen3-30B-A3B-Instruct-2507-GGUF/Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf"
+    model_file: "/mnt/models/Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf/Qwen3-30B-A3B-Instruct-2507-UD-Q4_K_XL.gguf"
+    maintainer: "Kush Gupta"
+    parameters:
+      ctx_size: 20048
+      threads: 14
+      temp: 0.7
+      top_k: 20
+      top_p: 0.8
+      cache_reuse: 256
+    resources:
+      requests:
+        memory: "16Gi"
+        cpu: "4"
+
   deepseek-r1-qwen3-8b:
     name: "DeepSeek R1 Qwen3 8B"
     description: "All-in-one Ramalama server with embedded Unsloth DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf"
