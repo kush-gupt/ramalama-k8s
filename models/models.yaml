@@ -68,7 +68,7 @@ models:
     maintainer: "Kush Gupta"
     parameters:
       ctx_size: 20048
-      threads: 14
+      threads: 16
       temp: 0.7
       top_k: 20
       top_p: 0.8
