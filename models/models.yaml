@@ -2,6 +2,21 @@
 # This file contains the configuration for all models in the repository
 
 models:
+  gpt-oss-20b:
+    name: "GPT-OSS 20B"
+    description: "All-in-one Ramalama server with embedded GPT-OSS 20B Q4_K_XL.gguf Unsloth model."
+    model_source: "gpt-oss-20b-source"
+    model_gguf_url: "hf://unsloth/gpt-oss-20b-GGUF/gpt-oss-20b-UD-Q4_K_XL.gguf"
+    model_file: "/mnt/models/gpt-oss-20b-UD-Q4_K_XL.gguf/gpt-oss-20b-UD-Q4_K_XL.gguf"
+    maintainer: "Kush Gupta"
+    parameters:
+      ctx_size: 20048
+      threads: -1
+      temp: 1.0
+      top_k: 0
+      top_p: 1.0
+      cache_reuse: 256
+
   qwen3-1b:
     name: "Qwen 3 1.7B"
     description: "All-in-one Ramalama server with embedded Qwen3-1.7B Q4_K_XL.gguf Unsloth model."
