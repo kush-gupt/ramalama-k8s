@@ -7,10 +7,25 @@ metadata:
     argocd.argoproj.io/sync-wave: "2"
 
 resources:
-  - ../../base/operator-only
-  - olsconfig.yaml
+  - ../../base
 
 patches:
+  - target:
+      kind: OLSConfig
+      name: cluster
+    patch: |-
+      - op: replace
+        path: /spec/llm/providers/0/url
+        value: http://gpt-oss-20b-ramalama-service.ramalama.svc.cluster.local:8080/v1
+      - op: replace
+        path: /spec/llm/providers/0/models/0/name
+        value: default
+      - op: add
+        path: /metadata/labels/model
+        value: gpt-oss-20b
+      - op: add
+        path: /metadata/labels/environment
+        value: gpt-oss-20b
   - target:
       kind: Secret
       name: credentials

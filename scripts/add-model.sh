@@ -277,6 +277,7 @@ log_info "Sanitized name: $MODEL_NAME_SAFE"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 TEMPLATES_DIR="$SCRIPT_DIR/templates"
+MODELS_YAML="$REPO_ROOT/models/models.yaml"
 
 # Create templates directory if it doesn't exist
 mkdir -p "$TEMPLATES_DIR"
@@ -375,10 +376,25 @@ metadata:
     argocd.argoproj.io/sync-wave: "2"
 
 resources:
-  - ../../base/operator-only
-  - olsconfig.yaml
+  - ../../base
 
 patches:
+  - target:
+      kind: OLSConfig
+      name: cluster
+    patch: |-
+      - op: replace
+        path: /spec/llm/providers/0/url
+        value: http://{{MODEL_NAME_SAFE}}-ramalama-service.{{LIGHTSPEED_NAMESPACE}}.svc.cluster.local:8080/v1
+      - op: replace
+        path: /spec/llm/providers/0/models/0/name
+        value: default
+      - op: add
+        path: /metadata/labels/model
+        value: {{MODEL_NAME_SAFE}}
+      - op: add
+        path: /metadata/labels/environment
+        value: {{MODEL_NAME_SAFE}}
   - target:
       kind: Secret
       name: credentials
@@ -404,58 +420,6 @@ EOF
 }
 
 # Function to create Lightspeed OLSConfig template if it doesn't exist
-create_lightspeed_olsconfig_template() {
-    local template_file="$TEMPLATES_DIR/lightspeed-olsconfig.template.yaml"
-    if [[ ! -f "$template_file" ]]; then
-        log_info "Creating Lightspeed OLSConfig template"
-        cat > "$template_file" << 'EOF'
-apiVersion: ols.openshift.io/v1alpha1
-kind: OLSConfig
-metadata:
-  name: cluster
-  namespace: openshift-lightspeed
-  labels:
-    app.kubernetes.io/created-by: lightspeed-operator
-    app.kubernetes.io/instance: olsconfig-sample
-    app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/name: olsconfig
-    app.kubernetes.io/part-of: lightspeed-operator
-    model: {{MODEL_NAME_SAFE}}
-    environment: {{MODEL_NAME_SAFE}}
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
-spec:
-  llm:
-    providers:
-      - credentialsSecretRef:
-          name: credentials
-        models:
-          - name: default
-        name: ramalama
-        type: openai
-        url: http://{{MODEL_NAME_SAFE}}-ramalama-service.{{LIGHTSPEED_NAMESPACE}}.svc.cluster.local:8080/v1
-  ols:
-    conversationCache:
-      postgres:
-        credentialsSecret: lightspeed-postgres-secret
-        dbName: postgres
-        maxConnections: 2000
-        sharedBuffers: 256MB
-        user: postgres
-      type: postgres
-    defaultModel: default
-    defaultProvider: ramalama
-    deployment:
-      console:
-        replicas: 1
-      replicas: 1
-    introspectionEnabled: true
-    logLevel: INFO
-  olsDataCollector:
-    logLevel: INFO
-EOF
-    fi
-}
 
 # Function to substitute template variables
 substitute_template() {
@@ -481,12 +445,78 @@ substitute_template() {
         "$template_file" > "$output_file"
 }
 
+# Insert or update entry in models/models.yaml
+update_models_yaml() {
+    local overlay_flag
+    if [[ "$CREATE_LIGHTSPEED_OVERLAY" == "true" ]]; then
+        overlay_flag=true
+    else
+        overlay_flag=false
+    fi
+
+    # Ensure models.yaml exists with a models root
+    if [[ ! -f "$MODELS_YAML" ]]; then
+        log_info "Creating $MODELS_YAML"
+        mkdir -p "$(dirname "$MODELS_YAML")"
+        cat > "$MODELS_YAML" << EOF
+# Ramalama Models Configuration
+# This file contains the configuration for all models in the repository
+
+models:
+
+templates:
+
+defaults:
+  maintainer: "$MAINTAINER"
+EOF
+    fi
+
+    # If model already present, do not duplicate
+    if grep -q "^  ${MODEL_NAME_SAFE}:" "$MODELS_YAML"; then
+        log_warning "Model ${MODEL_NAME_SAFE} already exists in models.yaml. Skipping insert."
+        return 0
+    fi
+
+    # Prepare YAML snippet for the new model
+    local tmp_snippet
+    tmp_snippet="$(mktemp)"
+    cat > "$tmp_snippet" << EOF
+  ${MODEL_NAME_SAFE}:
+    name: "${MODEL_NAME}"
+    description: "${MODEL_DESCRIPTION}"
+    model_source: "${MODEL_SOURCE}"
+    model_gguf_url: "${MODEL_GGUF_URL}"
+    model_file: "${MODEL_FILE}"
+    maintainer: "${MAINTAINER}"
+    create_lightspeed_overlay: ${overlay_flag}
+    lightspeed_namespace: "${LIGHTSPEED_NAMESPACE}"
+    parameters:
+      ctx_size: ${CTX_SIZE}
+      threads: ${THREADS}
+      temp: ${TEMP}
+      top_k: ${TOP_K}
+      top_p: ${TOP_P}
+      cache_reuse: ${CACHE_REUSE}
+EOF
+
+    # Insert snippet before the top-level templates: key; if not present, append at end
+    local tmp_out
+    tmp_out="$(mktemp)"
+    if grep -Eq "^(templates:|defaults:)" "$MODELS_YAML"; then
+        awk 'FNR==NR { s = s $0 "\n"; next } $0 ~ /^(templates:|defaults:)/ && ins==0 { printf "%s", s; ins=1 } { print } END { if (ins==0) printf "%s", s }' "$tmp_snippet" "$MODELS_YAML" > "$tmp_out"
+    else
+        cat "$MODELS_YAML" "$tmp_snippet" > "$tmp_out"
+    fi
+    mv "$tmp_out" "$MODELS_YAML"
+    rm -f "$tmp_snippet"
+    log_success "Added ${MODEL_NAME_SAFE} to models/models.yaml"
+}
+
 # Create templates
 create_containerfile_template
 create_k8s_template
 if [[ "$CREATE_LIGHTSPEED_OVERLAY" == "true" ]]; then
     create_lightspeed_template
-    create_lightspeed_olsconfig_template
 fi
 
 # Generate Containerfile
@@ -507,81 +537,7 @@ if [[ "$CREATE_LIGHTSPEED_OVERLAY" == "true" ]]; then
     LIGHTSPEED_OVERLAY_DIR="$REPO_ROOT/k8s/lightspeed/overlays/${MODEL_NAME_SAFE}"
     mkdir -p "$LIGHTSPEED_OVERLAY_DIR"
     LIGHTSPEED_KUSTOMIZATION_PATH="$LIGHTSPEED_OVERLAY_DIR/kustomization.yaml"
-    LIGHTSPEED_OLSCONFIG_PATH="$LIGHTSPEED_OVERLAY_DIR/olsconfig.yaml"
     substitute_template "$TEMPLATES_DIR/lightspeed-overlay.template.yaml" "$LIGHTSPEED_KUSTOMIZATION_PATH"
-    substitute_template "$TEMPLATES_DIR/lightspeed-olsconfig.template.yaml" "$LIGHTSPEED_OLSCONFIG_PATH"
-    
-    # Create README for the overlay
-    cat > "$LIGHTSPEED_OVERLAY_DIR/README.md" << EOF
-# OpenShift Lightspeed with ${MODEL_NAME}
-
-This overlay configures OpenShift Lightspeed to use the ${MODEL_NAME} model deployed in the \`ramalama\` namespace.
-
-## Prerequisites
-
-Ensure you have the ${MODEL_NAME} model running:
-\`\`\`bash
-oc get pods -l model=${MODEL_NAME_SAFE} -n ramalama
-\`\`\`
-
-If not deployed, deploy it first:
-\`\`\`bash
-oc apply -f ../../models/ramalama-namespace.yaml
-oc apply -k ../../models/${MODEL_NAME_SAFE}
-\`\`\`
-
-## Deployment
-
-Due to the timing dependency between operator installation and CRD creation, deployment requires two steps:
-
-### Step 1: Install the OpenShift Lightspeed Operator
-\`\`\`bash
-oc apply -k ../../base/operator-only
-\`\`\`
-
-Wait for the operator to be ready (this creates the required CRDs):
-\`\`\`bash
-oc wait --for=condition=Ready pod -l app.kubernetes.io/name=lightspeed-operator -n openshift-lightspeed --timeout=300s
-\`\`\`
-
-### Step 2: Apply the Complete Configuration
-\`\`\`bash
-oc apply -k .
-\`\`\`
-
-## Verification
-
-Check that all components are running:
-\`\`\`bash
-# Check operator
-oc get pods -l app.kubernetes.io/name=lightspeed-operator -n openshift-lightspeed
-
-# Check lightspeed components
-oc get pods -l app.kubernetes.io/name=lightspeed-app-server -n openshift-lightspeed
-
-# Check OLS configuration
-oc get olsconfig cluster -n openshift-lightspeed
-\`\`\`
-
-## Usage
-
-1. Access the OpenShift web console
-2. Look for the Lightspeed assistant icon in the navigation
-3. Start asking questions about your cluster!
-
-Example questions:
-- "How do I create a deployment?"
-- "Show me pods that are not running"
-- "Generate a service YAML for my application"
-
-## Cleanup
-
-To remove the deployment:
-\`\`\`bash
-oc delete -k .
-oc delete -k ../../base/operator-only
-\`\`\`
-EOF
 fi
 
 # Note: With the new modular workflow system, no manual workflow updates are needed!
@@ -612,6 +568,9 @@ CREATE_LIGHTSPEED_OVERLAY=$CREATE_LIGHTSPEED_OVERLAY
 LIGHTSPEED_NAMESPACE="$LIGHTSPEED_NAMESPACE"
 EOF
 
+# Update models.yaml with this model so it is recognized by generators
+update_models_yaml
+
 # Summary
 echo
 log_success "Model $MODEL_NAME added successfully!"
@@ -622,8 +581,6 @@ echo "  - k8s/models/${MODEL_NAME_SAFE}/kustomization.yaml"
 echo "  - models/${MODEL_NAME_SAFE}.conf"
 if [[ "$CREATE_LIGHTSPEED_OVERLAY" == "true" ]]; then
     echo "  - k8s/lightspeed/overlays/${MODEL_NAME_SAFE}/kustomization.yaml"
-    echo "  - k8s/lightspeed/overlays/${MODEL_NAME_SAFE}/olsconfig.yaml"
-    echo "  - k8s/lightspeed/overlays/${MODEL_NAME_SAFE}/README.md"
     echo "  - NOTE: ArgoCD ApplicationSet will auto-discover this overlay!"
 fi
 echo "  - NOTE: Using GitOps-compatible Kustomize structure!"

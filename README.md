@@ -252,8 +252,6 @@ graph TB
 - 📦 `containerfiles/Containerfile-llama-7b`
 - ☸️ `k8s/models/llama-7b/kustomization.yaml`
 - 🎯 `k8s/lightspeed/overlays/llama-7b/kustomization.yaml`
-- 🤖 `k8s/lightspeed/overlays/llama-7b/olsconfig.yaml`
-- 📖 `k8s/lightspeed/overlays/llama-7b/README.md`
 - ⚙️ `models/llama-7b.conf`
 
 ### **List Models**
