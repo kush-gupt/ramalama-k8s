@@ -44,6 +44,7 @@ graph LR
 | **Qwen 3 4B**         | Medium  | ✅ Ready |
 | **Qwen 3 30B**        | Large   | ✅ Ready |
 | **DeepSeek R1 Qwen3** | 8B      | ✅ Ready |
+| **GPT OSS 20B**       | Medium  |          |
 | **Custom**            | Any!    | ✅ Ready |
 
 ### 🔐 **Security Features**
