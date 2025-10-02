@@ -2,37 +2,37 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 metadata:
-  name: ramalama-gpt-oss-20b
+  name: ramalama-gemma-3-12b
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 
 resources:
 - ../base-model
 
-namePrefix: "gpt-oss-20b-"
+namePrefix: "gemma-3-12b-"
 
 commonLabels:
-  app.kubernetes.io/instance: "gpt-oss-20b"
-  model: "gpt-oss-20b"
+  app.kubernetes.io/instance: "gemma-3-12b"
+  model: "gemma-3-12b"
 
 configMapGenerator:
 - name: model-config
   behavior: replace
   literals:
-  - MODEL_NAME=gpt-oss-20b
-  - MODEL_FILE=/mnt/models/gpt-oss-20b-UD-Q4_K_XL.gguf/gpt-oss-20b-UD-Q4_K_XL.gguf
-  - ALIAS=gpt-oss-20b-model
+  - MODEL_NAME=gemma-3-12b
+  - MODEL_FILE=/mnt/models/gemma-3-12b-it-Q4_K_M.gguf/gemma-3-12b-it-Q4_K_M.gguf
+  - ALIAS=gemma-3-12b-model
 - name: ramalama-config
   behavior: merge
   literals:
   - CTX_SIZE=20048
   - THREADS=-1
-  - TEMP=1.0
-  - TOP_K=0
-  - TOP_P=1.0
+  - TEMP=1
+  - TOP_K=64
+  - TOP_P=0.95
   - CACHE_REUSE=256
 
 images:
 - name: MODEL_IMAGE
-  newName: "ghcr.io/kush-gupt/gpt-oss-20b-ramalama"
-  newTag: latest
+  newName: "ghcr.io/kush-gupt/gemma-3-12b-ramalama"
+  newTag: latest 

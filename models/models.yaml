@@ -139,6 +139,22 @@ models:
         memory: "4Gi"
         cpu: "2"
 # Template configurations for common model families
+  gemma-3-12b:
+    name: "gemma-3-12b"
+    description: "gemma-3-12b-it-Q4_K_M.gguf from Unsloth"
+    model_source: "gemma-3-12b-source"
+    model_gguf_url: "hf://unsloth/gemma-3-12b-it-GGUF/gemma-3-12b-it-Q4_K_M.gguf"
+    model_file: "/mnt/models/gemma-3-12b-it-Q4_K_M.gguf/gemma-3-12b-it-Q4_K_M.gguf"
+    maintainer: "Kush Gupta"
+    create_lightspeed_overlay: true
+    lightspeed_namespace: "ramalama"
+    parameters:
+      ctx_size: 20048
+      threads: 14
+      temp: 0.6
+      top_k: 20
+      top_p: 0.95
+      cache_reuse: 256
 templates:
   llama:
     parameters:

@@ -159,10 +159,12 @@ jobs:
 
       - name: Upgrade to Podman 5
         run: |
-          sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu oracular universe"
+          sudo add-apt-repository "deb http://old-releases.ubuntu.com/ubuntu oracular universe"
+          # Update package lists
           sudo apt-get update
           sudo apt-get purge firefox
-          sudo apt-get upgrade
+          # Install specific podman version
+          sudo apt-get upgrade -y podman crun
 
       - name: Configure user namespaces for rootless podman
         run: |
