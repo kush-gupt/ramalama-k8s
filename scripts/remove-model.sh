@@ -106,6 +106,7 @@ MODEL_NAME_SAFE=$(echo "$MODEL_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z
 # Get script directory and repository root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+MODELS_YAML="$REPO_ROOT/models/models.yaml"
 
 log_info "Removing model: $MODEL_NAME"
 log_info "Sanitized name: $MODEL_NAME_SAFE"
@@ -115,6 +116,7 @@ FILES_TO_REMOVE=()
 DIRS_TO_REMOVE=()
 CONTAINERFILE_PATH="$REPO_ROOT/containerfiles/Containerfile-${MODEL_NAME_SAFE}"
 MODEL_K8S_DIR="$REPO_ROOT/k8s/models/${MODEL_NAME_SAFE}"
+LIGHTSPEED_OVERLAY_DIR="$REPO_ROOT/k8s/lightspeed/overlays/${MODEL_NAME_SAFE}"
 CONFIG_PATH="$REPO_ROOT/models/${MODEL_NAME_SAFE}.conf"
 
 if [[ -f "$CONTAINERFILE_PATH" ]]; then
@@ -123,6 +125,10 @@ fi
 
 if [[ -d "$MODEL_K8S_DIR" ]]; then
     DIRS_TO_REMOVE+=("$MODEL_K8S_DIR")
+fi
+
+if [[ -d "$LIGHTSPEED_OVERLAY_DIR" ]]; then
+    DIRS_TO_REMOVE+=("$LIGHTSPEED_OVERLAY_DIR")
 fi
 
 if [[ -f "$CONFIG_PATH" ]]; then
@@ -184,6 +190,21 @@ for dir in "${DIRS_TO_REMOVE[@]}"; do
         rm -rf "$dir"
     fi
 done
+
+# Remove from models.yaml if present
+if [[ -f "$MODELS_YAML" ]]; then
+    # Delete the block under key "  ${MODEL_NAME_SAFE}:" up to the next model key or a top-level key (no indentation)
+    tmp_out="$(mktemp)"
+    awk -v key="  ${MODEL_NAME_SAFE}:" '
+      BEGIN {skip=0}
+      {
+        if ($0 == key) { skip=1; next }
+        if (skip==1 && ($0 ~ /^  [a-z0-9-]+:/ || $0 ~ /^[^ ]/)) { skip=0 }
+        if (skip==0) print $0
+      }
+    ' "$MODELS_YAML" > "$tmp_out" && mv "$tmp_out" "$MODELS_YAML"
+    log_info "Removed ${MODEL_NAME_SAFE} from models/models.yaml (if existed)"
+fi
 
 # Note: With modular workflow, no manual workflow updates are needed
 log_info "Skipping workflow update - using modular workflow system"

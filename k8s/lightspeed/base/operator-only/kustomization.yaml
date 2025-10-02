@@ -7,9 +7,9 @@ metadata:
     argocd.argoproj.io/sync-wave: "0"
 
 resources:
-  - namespace.yaml
-  - subscription.yaml
-  - credentials-secret.yaml
+  - ../namespace.yaml
+  - ../subscription.yaml
+  - ../credentials-secret.yaml
 
 # Use targeted patches to add labels without affecting immutable fields
 patches:

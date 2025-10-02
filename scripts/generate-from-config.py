@@ -23,11 +23,27 @@ class ModelGenerator:
         self.k8s_dir = self.repo_root / "k8s"
         self.models_dir = self.repo_root / "models"
         self.scripts_dir = self.repo_root / "scripts"
+        self.templates_dir = self.scripts_dir / "templates"
         self.workflow_dir = self.repo_root / ".github" / "workflows"
         self.lightspeed_dir = self.repo_root / "k8s" / "lightspeed" / "overlays"
         
         for dir_path in [self.containerfiles_dir, self.k8s_dir, self.models_dir, self.lightspeed_dir]:
             dir_path.mkdir(parents=True, exist_ok=True)
+
+    def _render_template_file(self, relative_template_path: str, variables: Dict[str, Any]) -> str:
+        """Render a text template with {{VAR}} placeholders from the templates directory."""
+        template_path = self.templates_dir / relative_template_path
+        try:
+            with open(template_path, 'r') as f:
+                content = f.read()
+        except Exception as e:
+            raise RuntimeError(f"Failed to load template '{relative_template_path}': {e}")
+
+        def replace(match: re.Match) -> str:
+            key = match.group(1)
+            return str(variables.get(key, ""))
+
+        return re.sub(r"\{\{(\w+)\}\}", replace, content)
 
     def _load_config(self) -> Dict[str, Any]:
         """Load and validate the YAML configuration."""
@@ -79,31 +95,14 @@ class ModelGenerator:
         return merged
 
     def generate_containerfile(self, model_key: str, model_config: Dict[str, Any]) -> str:
-        """Generate Containerfile content."""
-        template = """ARG BASE_IMAGE_NAME
-ARG MODEL_SOURCE_NAME
-FROM ${{BASE_IMAGE_NAME}}
-
-ARG MODEL_SOURCE_NAME
-
-# Copy the entire /models directory from the model source
-# into the final application image at /mnt/models.
-COPY --from=${{MODEL_SOURCE_NAME}} /models /mnt/models
-
-# This is a sanity check for OpenShift's random user ID.
-USER root
-RUN chmod -R a+rX /mnt/models
-USER 1001
-
-# Optional: Add labels to describe your new all-in-one image
-LABEL maintainer="{maintainer}"
-LABEL description="{description}"
-"""
-        
-        return template.format(
-            maintainer=model_config.get('maintainer', 'Unknown'),
-            description=model_config.get('description', f'{model_config["name"]} model')
-        )
+        """Generate Containerfile content from shared template."""
+        variables = {
+            'MAINTAINER': model_config.get('maintainer', 'Unknown'),
+            'DESCRIPTION': model_config.get('description', f"{model_config['name']} model"),
+            'MODEL_NAME_SAFE': model_config['model_name_safe'],
+            'MODEL_NAME': model_config.get('name', model_config['model_name_safe']),
+        }
+        return self._render_template_file('Containerfile.template', variables)
 
     def generate_k8s_kustomization(self, model_key: str, model_config: Dict[str, Any]) -> tuple[str, str]:
         """Generate Kustomization files for GitOps deployment."""
@@ -112,7 +111,64 @@ LABEL description="{description}"
         registry_path = self.config.get('defaults', {}).get('registry_path', 'ghcr.io/kush-gupt')
         app_image_url = f"{registry_path}/{model_name_safe}-ramalama"
         
-        # Generate kustomization.yaml
+        # Render kustomization from shared template to avoid duplication
+        variables = {
+            'MODEL_NAME_SAFE': model_name_safe,
+            'MODEL_NAME': model_config.get('name', model_name_safe),
+            'MODEL_FILE': model_config.get('model_file', '/mnt/models/model.gguf'),
+            'APP_IMAGE_URL': app_image_url,
+            'CTX_SIZE': params.get('ctx_size', 4096),
+            'THREADS': params.get('threads', 14),
+            'TEMP': params.get('temp', 0.7),
+            'TOP_K': params.get('top_k', 40),
+            'TOP_P': params.get('top_p', 0.9),
+            'CACHE_REUSE': params.get('cache_reuse', 256),
+        }
+        kustomization_yaml_templated = self._render_template_file('kustomization.template.yaml', variables)
+        
+        # Generate optional model resources patch
+        resources = model_config.get('resources', {})
+        model_patch_templated = ""
+        if resources:
+            lines = [
+                "apiVersion: apps/v1",
+                "kind: Deployment",
+                "metadata:",
+                "  name: ramalama-deployment",
+                "spec:",
+                "  template:",
+                "    spec:",
+                "      containers:",
+                "      - name: ramalama",
+                "        resources:",
+            ]
+            if 'requests' in resources:
+                req = resources['requests']
+                lines += [
+                    "          requests:",
+                    f"            memory: \"{req.get('memory', '4Gi')}\"",
+                    f"            cpu: \"{req.get('cpu', '2')}\"",
+                ]
+            if 'limits' in resources:
+                lim = resources['limits']
+                lines += [
+                    "          limits:",
+                    f"            memory: \"{lim.get('memory', '8Gi')}\"",
+                    f"            cpu: \"{lim.get('cpu', '4')}\"",
+                ]
+            model_patch_templated = "\n".join(lines) + "\n"
+            kustomization_yaml_templated += (
+                "\n\n# Model-specific resource patches\n"
+                "patches:\n"
+                "  - path: model-patch.yaml\n"
+                "    target:\n"
+                "      kind: Deployment\n"
+                "      name: ramalama-deployment\n"
+            )
+
+        return kustomization_yaml_templated, model_patch_templated
+
+        # Legacy (unused) string-based template retained below for reference, will never execute
         kustomization_yaml = f"""apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
@@ -145,7 +201,6 @@ images:
     newName: {app_image_url}
     newTag: latest
 
-# Model-specific parameters via configmap merge
 configMapGenerator:
   - name: ramalama-config
     behavior: merge
@@ -191,60 +246,12 @@ patchesStrategicMerge:
         return kustomization_yaml, model_patch
 
     def generate_lightspeed_overlay(self, model_key: str, model_config: Dict[str, Any]) -> str:
-        """Generate OpenShift Lightspeed overlay."""
-        model_name_safe = model_config['model_name_safe']
-        lightspeed_namespace = model_config.get('lightspeed_namespace', 'ramalama')
-        
-        overlay_yaml = f"""apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-
-metadata:
-  name: openshift-lightspeed-{model_name_safe}
-  annotations:
-    argocd.argoproj.io/sync-wave: "2"
-
-resources:
-  - ../../base
-
-patches:
-  - target:
-      kind: OLSConfig
-      name: cluster
-    patch: |-
-      - op: replace
-        path: /spec/llm/providers/0/url
-        value: http://{model_name_safe}-ramalama-service.{lightspeed_namespace}.svc.cluster.local:8080/v1
-      - op: replace
-        path: /spec/llm/providers/0/models/0/name
-        value: default
-      - op: add
-        path: /metadata/labels/model
-        value: {model_name_safe}
-      - op: add
-        path: /metadata/labels/environment
-        value: {model_name_safe}
-  - target:
-      kind: Secret
-      name: credentials
-    patch: |-
-      - op: add
-        path: /metadata/labels/model
-        value: {model_name_safe}
-      - op: add
-        path: /metadata/labels/environment
-        value: {model_name_safe}
-  - target:
-      kind: Subscription
-      name: lightspeed-operator
-    patch: |-
-      - op: add
-        path: /metadata/labels/model
-        value: {model_name_safe}
-      - op: add
-        path: /metadata/labels/environment
-        value: {model_name_safe}"""
-        
-        return overlay_yaml
+        """Generate OpenShift Lightspeed overlay from shared template."""
+        variables = {
+            'MODEL_NAME_SAFE': model_config['model_name_safe'],
+            'LIGHTSPEED_NAMESPACE': model_config.get('lightspeed_namespace', 'ramalama'),
+        }
+        return self._render_template_file('lightspeed-overlay.template.yaml', variables)
 
     def generate_workflow_job(self, model_key: str, model_config: Dict[str, Any]) -> tuple[str, str]:
         """Generate GitHub workflow job content."""

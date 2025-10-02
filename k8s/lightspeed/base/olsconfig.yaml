@@ -20,7 +20,7 @@ spec:
           - name: default
         name: ramalama
         type: openai
-        url: http://qwen3-4b-ramalama-service.ramalama.svc.cluster.local:8080/v1
+        url: http://ramalama-discovery.openshift-lightspeed.svc.cluster.local:8080/v1
   ols:
     conversationCache:
       postgres:

@@ -7,10 +7,25 @@ metadata:
     argocd.argoproj.io/sync-wave: "2"
 
 resources:
-  - ../../base/operator-only
-  - olsconfig.yaml
+  - ../../base
 
 patches:
+  - target:
+      kind: OLSConfig
+      name: cluster
+    patch: |-
+      - op: replace
+        path: /spec/llm/providers/0/url
+        value: http://gemma-3n-e4b-ramalama-service.ramalama.svc.cluster.local:8080/v1
+      - op: replace
+        path: /spec/llm/providers/0/models/0/name
+        value: default
+      - op: add
+        path: /metadata/labels/model
+        value: gemma-3n-e4b
+      - op: add
+        path: /metadata/labels/environment
+        value: gemma-3n-e4b
   - target:
       kind: Secret
       name: credentials
