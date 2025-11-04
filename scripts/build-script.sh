@@ -85,10 +85,21 @@ dnf_install() {
     ln -sf /usr/bin/python3.11 /usr/bin/python3
   fi
 
+  # Clean package cache to free up space before mesa installation
+  dnf -y clean all
+  rm -rf /var/cache/dnf/* /var/cache/yum/*
+
   dnf_install_mesa # on x86_64 and aarch64 we use vulkan via mesa
 
-  dnf_install_ffmpeg
+  # Clean again after mesa installation
   dnf -y clean all
+  rm -rf /var/cache/dnf/* /var/cache/yum/*
+
+  dnf_install_ffmpeg
+  
+  # Final cleanup
+  dnf -y clean all
+  rm -rf /var/cache/dnf/* /var/cache/yum/*
 }
 
 cmake_check_warnings() {
@@ -227,7 +238,13 @@ main() {
 
   clone_and_build_llama_cpp
   available dnf && dnf_remove
-  rm -rf /var/cache/*dnf* /opt/rocm-*/lib/*/library/*gfx9*
+  
+  # Aggressive cleanup to free up space
+  rm -rf /var/cache/*dnf* /var/cache/yum/* /opt/rocm-*/lib/*/library/*gfx9*
+  rm -rf /tmp/* /var/tmp/*
+  find /usr -type f -name '*.pyc' -delete
+  find /usr -type d -name '__pycache__' -delete
+  
   ldconfig # needed for libraries
 }
 
