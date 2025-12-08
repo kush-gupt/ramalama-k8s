@@ -15,21 +15,38 @@ spec:
     prometheus.io/port: "8080"
   containers:
   - args:
-    - --port=8080
-    - --model=/mnt/models
-    - --alias={{.Name}}
+    - --port
+    - "8080"
+    - --model
+    - /mnt/models
+    - --alias
+    - "{{.Name}}"
     - --embedding
-    - --pooling=rank
+    - --pooling
+    - rank
     - --reranking
-    - --ctx-size=512
-    - --threads=-1
-    - --batch-size=2048
-    - --ubatch-size=512
+    - --ctx-size
+    - "512"
+    - --threads
+    - "-1"
+    - --batch-size
+    - "2048"
+    - --ubatch-size
+    - "512"
     - --no-warmup
-    - --host=0.0.0.0
-    - -ngl=0
+    - --host
+    - 0.0.0.0
+    - -ngl
+    - "0"
     command:
     - /usr/bin/llama-server
+    env:
+    - name: VK_ICD_FILENAMES
+      value: ""
+    - name: VK_DRIVER_FILES
+      value: ""
+    - name: CUDA_VISIBLE_DEVICES
+      value: ""
     image: quay.io/ramalama/ramalama:latest
     name: kserve-container
     ports:

@@ -7,7 +7,9 @@ ARG MODEL_SOURCE_NAME
 COPY --from=${MODEL_SOURCE_NAME} /models /models
 
 USER root
-RUN chmod -R a+rX /models
+RUN chmod -R a+rX /models && \
+    mkdir -p /mnt && \
+    ln -sf $(find /models -name "*.gguf" -type f | head -1) /mnt/models
 USER 1001
 
 LABEL maintainer="{{MAINTAINER}}"
