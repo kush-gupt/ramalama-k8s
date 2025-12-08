@@ -1,0 +1,143 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  annotations:
+    description: Ramalama CPU Reranking ServingRuntime using llama.cpp for document reranking
+    opendatahub.io/apiProtocol: REST
+    opendatahub.io/model-type: '["reranking"]'
+    opendatahub.io/modelServingSupport: '["single"]'
+    openshift.io/display-name: Ramalama CPU Reranking ServingRuntime for KServe
+    openshift.io/provider-display-name: Ramalama Community
+    tags: rhods,rhoai,kserve,servingruntime,ramalama,llama.cpp,cpu,rerank,reranking,gguf
+    template.openshift.io/documentation-url: https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md
+    template.openshift.io/long-description: >-
+      This template defines resources needed to deploy Ramalama (llama.cpp based)
+      CPU Reranking ServingRuntime with KServe in Red Hat OpenShift AI. It provides
+      a /v1/rerank API for document reranking without requiring GPU hardware.
+      Use with reranker models like bge-reranker-v2-m3, bge-reranker-base, or jina-reranker.
+  labels:
+    opendatahub.io/dashboard: "true"
+  name: ramalama-rerank
+  namespace: redhat-ods-applications
+objects:
+- apiVersion: serving.kserve.io/v1alpha1
+  kind: ServingRuntime
+  metadata:
+    annotations:
+      opendatahub.io/apiProtocol: REST
+      opendatahub.io/recommended-accelerators: '[]'
+      opendatahub.io/runtime-version: ${RUNTIME_VERSION}
+      openshift.io/display-name: Ramalama CPU Reranking ServingRuntime
+    labels:
+      opendatahub.io/dashboard: "true"
+    name: ramalama-rerank-runtime
+  spec:
+    annotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "8080"
+    containers:
+    - args:
+      - --port=8080
+      - --model=/mnt/models
+      - --alias={{.Name}}
+      - --embedding
+      - --pooling=rank
+      - --reranking
+      - --ctx-size=${CTX_SIZE}
+      - --threads=${THREADS}
+      - --batch-size=${BATCH_SIZE}
+      - --ubatch-size=${UBATCH_SIZE}
+      - --no-warmup
+      - --host=0.0.0.0
+      - -ngl=0
+      command:
+      - /usr/bin/llama-server
+      env:
+      - name: HF_HOME
+        value: /tmp/hf_home
+      - name: HF_HUB_OFFLINE
+        value: "1"
+      image: ${IMAGE}
+      name: kserve-container
+      ports:
+      - containerPort: 8080
+        protocol: TCP
+      resources:
+        limits:
+          cpu: ${CPU_LIMIT}
+          memory: ${MEMORY_LIMIT}
+        requests:
+          cpu: ${CPU_REQUEST}
+          memory: ${MEMORY_REQUEST}
+      livenessProbe:
+        httpGet:
+          path: /health
+          port: 8080
+        initialDelaySeconds: 15
+        periodSeconds: 10
+        timeoutSeconds: 5
+      readinessProbe:
+        httpGet:
+          path: /health
+          port: 8080
+        initialDelaySeconds: 10
+        periodSeconds: 5
+        timeoutSeconds: 3
+    multiModel: false
+    supportedModelFormats:
+    - autoSelect: true
+      name: gguf
+    - autoSelect: true
+      name: reranker
+parameters:
+- description: Ramalama container image to use
+  displayName: Container Image
+  name: IMAGE
+  required: true
+  value: quay.io/ramalama/ramalama:latest
+- description: Runtime version
+  displayName: Runtime Version
+  name: RUNTIME_VERSION
+  required: true
+  value: latest
+- description: Context window size for the model
+  displayName: Context Size
+  name: CTX_SIZE
+  required: false
+  value: "512"
+- description: Number of CPU threads to use (-1 for auto)
+  displayName: CPU Threads
+  name: THREADS
+  required: false
+  value: "-1"
+- description: Logical batch size for reranking
+  displayName: Batch Size
+  name: BATCH_SIZE
+  required: false
+  value: "2048"
+- description: Physical batch size for reranking
+  displayName: Micro Batch Size
+  name: UBATCH_SIZE
+  required: false
+  value: "512"
+- description: CPU resource request
+  displayName: CPU Request
+  name: CPU_REQUEST
+  required: false
+  value: "1"
+- description: CPU resource limit
+  displayName: CPU Limit
+  name: CPU_LIMIT
+  required: false
+  value: "4"
+- description: Memory resource request
+  displayName: Memory Request
+  name: MEMORY_REQUEST
+  required: false
+  value: "1Gi"
+- description: Memory resource limit
+  displayName: Memory Limit
+  name: MEMORY_LIMIT
+  required: false
+  value: "4Gi"
+

@@ -1,0 +1,38 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: ramalama-ms-marco-minilm-l12-v2
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+
+resources:
+- ../base-model
+
+namePrefix: "ms-marco-minilm-l12-v2-"
+
+commonLabels:
+  app.kubernetes.io/instance: "ms-marco-minilm-l12-v2"
+  model: "ms-marco-minilm-l12-v2"
+
+configMapGenerator:
+- name: model-config
+  behavior: replace
+  literals:
+  - MODEL_NAME=ms-marco-minilm-l12-v2
+  - MODEL_FILE=/mnt/models/ms-marco-MiniLM-L12-v2.f16.gguf/ms-marco-MiniLM-L12-v2.f16.gguf
+  - ALIAS=ms-marco-minilm-l12-v2-model
+- name: ramalama-config
+  behavior: merge
+  literals:
+  - CTX_SIZE=512
+  - THREADS=-1
+  - TEMP=0.6
+  - TOP_K=20
+  - TOP_P=0.95
+  - CACHE_REUSE=256
+
+images:
+- name: MODEL_IMAGE
+  newName: "ghcr.io/kush-gupt/ms-marco-minilm-l12-v2-ramalama"
+  newTag: latest 

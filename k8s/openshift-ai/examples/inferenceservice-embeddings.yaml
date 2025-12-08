@@ -1,0 +1,24 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  annotations:
+    serving.kserve.io/deploymentMode: RawDeployment
+  labels:
+    opendatahub.io/dashboard: "true"
+  name: all-minilm-l6-v2-embeddings
+spec:
+  predictor:
+    minReplicas: 1
+    maxReplicas: 5
+    model:
+      modelFormat:
+        name: embedding
+      runtime: ramalama-embeddings-runtime
+      storageUri: oci://ghcr.io/kush-gupt/all-minilm-l6-v2-ramalama:latest
+    resources:
+      limits:
+        cpu: "4"
+        memory: 2Gi
+      requests:
+        cpu: "1"
+        memory: 512Mi

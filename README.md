@@ -320,6 +320,7 @@ podman build -f containerfiles/Containerfile-min .
 ## 📚 **Documentation**
 
 - **[Kubernetes Deployment Guide](k8s/README.md)**
+- **[OpenShift AI Integration](k8s/openshift-ai/README.md)** - KServe ServingRuntime for RHOAI
 - **[OpenShift Lightspeed Integration](k8s/lightspeed/README.md)**  
 - **[Model Management](MODELS.md)**
 - **[GitOps Setup](OPENSHIFT_GITOPS.md)**
@@ -337,6 +338,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **🎉 Ready to deploy your own AI models?**
 
 [![Get Started](https://img.shields.io/badge/Get%20Started-Now-success?style=for-the-badge&logo=rocket)](k8s/README.md)
+[![OpenShift AI](https://img.shields.io/badge/OpenShift%20AI-KServe-blue?style=for-the-badge&logo=redhatopenshift)](k8s/openshift-ai/README.md)
 [![OpenShift Lightspeed](https://img.shields.io/badge/OpenShift%20Lightspeed-Deploy-red?style=for-the-badge&logo=redhatopenshift)](k8s/lightspeed/README.md)
 
 *Made for the open source community*

@@ -1,0 +1,24 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  annotations:
+    serving.kserve.io/deploymentMode: RawDeployment
+  labels:
+    opendatahub.io/dashboard: "true"
+  name: ms-marco-reranker
+spec:
+  predictor:
+    minReplicas: 1
+    maxReplicas: 3
+    model:
+      modelFormat:
+        name: reranker
+      runtime: ramalama-rerank-runtime
+      storageUri: oci://ghcr.io/kush-gupt/ms-marco-minilm-l12-v2-ramalama:latest
+    resources:
+      limits:
+        cpu: "4"
+        memory: 2Gi
+      requests:
+        cpu: "1"
+        memory: 512Mi

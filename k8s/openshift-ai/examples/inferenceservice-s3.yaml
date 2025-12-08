@@ -1,0 +1,44 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  annotations:
+    serving.kserve.io/deploymentMode: RawDeployment
+  labels:
+    opendatahub.io/dashboard: "true"
+  name: my-model-s3-ramalama
+spec:
+  predictor:
+    minReplicas: 1
+    model:
+      modelFormat:
+        name: gguf
+      runtime: ramalama-cpu-runtime
+      storageUri: s3://my-bucket/models/my-model.gguf
+      storage:
+        key: aws-connection-my-data-connection
+        path: models/my-model.gguf
+    resources:
+      limits:
+        cpu: "8"
+        memory: 16Gi
+      requests:
+        cpu: "4"
+        memory: 8Gi
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aws-connection-my-data-connection
+  labels:
+    opendatahub.io/dashboard: "true"
+    opendatahub.io/managed: "true"
+  annotations:
+    opendatahub.io/connection-type: s3
+    openshift.io/display-name: My S3 Connection
+type: Opaque
+stringData:
+  AWS_ACCESS_KEY_ID: "<your-access-key>"
+  AWS_SECRET_ACCESS_KEY: "<your-secret-key>"
+  AWS_S3_ENDPOINT: "https://s3.amazonaws.com"
+  AWS_S3_BUCKET: "my-bucket"
+  AWS_DEFAULT_REGION: "us-east-1"

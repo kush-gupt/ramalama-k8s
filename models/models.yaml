@@ -171,6 +171,22 @@ models:
       top_k: 20
       top_p: 0.95
       cache_reuse: 256
+  ms-marco-minilm-l12-v2:
+    name: "ms-marco-minilm-l12-v2"
+    description: "MS MARCO MiniLM L12 v2 reranker model for document relevance scoring"
+    model_source: "ms-marco-minilm-l12-v2-source"
+    model_gguf_url: "hf://mradermacher/ms-marco-MiniLM-L12-v2-GGUF/ms-marco-MiniLM-L12-v2.f16.gguf"
+    model_file: "/mnt/models/ms-marco-MiniLM-L12-v2.f16.gguf/ms-marco-MiniLM-L12-v2.f16.gguf"
+    maintainer: "Kush Gupta"
+    create_lightspeed_overlay: true
+    lightspeed_namespace: "ramalama"
+    parameters:
+      ctx_size: 512
+      threads: -1
+      temp: 0.6
+      top_k: 20
+      top_p: 0.95
+      cache_reuse: 256
 templates:
   llama:
     parameters:

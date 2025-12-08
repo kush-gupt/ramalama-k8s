@@ -1,0 +1,68 @@
+apiVersion: serving.kserve.io/v1alpha1
+kind: ServingRuntime
+metadata:
+  annotations:
+    opendatahub.io/apiProtocol: REST
+    opendatahub.io/recommended-accelerators: '[]'
+    opendatahub.io/runtime-version: latest
+    openshift.io/display-name: Ramalama CPU Embeddings ServingRuntime
+  labels:
+    opendatahub.io/dashboard: "true"
+  name: ramalama-embeddings-runtime
+spec:
+  annotations:
+    prometheus.io/path: /metrics
+    prometheus.io/port: "8080"
+  containers:
+  - args:
+    - --port=8080
+    - --model=/mnt/models
+    - --alias={{.Name}}
+    - --embedding
+    - --pooling=mean
+    - --ctx-size=512
+    - --threads=-1
+    - --batch-size=2048
+    - --ubatch-size=512
+    - --no-warmup
+    - --host=0.0.0.0
+    - -ngl=0
+    command:
+    - /usr/bin/llama-server
+    env:
+    - name: HF_HOME
+      value: /tmp/hf_home
+    - name: HF_HUB_OFFLINE
+      value: "1"
+    image: quay.io/ramalama/ramalama:latest
+    name: kserve-container
+    ports:
+    - containerPort: 8080
+      protocol: TCP
+    resources:
+      limits:
+        cpu: "4"
+        memory: 4Gi
+      requests:
+        cpu: "1"
+        memory: 1Gi
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 15
+      periodSeconds: 10
+      timeoutSeconds: 5
+    readinessProbe:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 10
+      periodSeconds: 5
+      timeoutSeconds: 3
+  multiModel: false
+  supportedModelFormats:
+  - autoSelect: true
+    name: gguf
+  - autoSelect: true
+    name: embedding
