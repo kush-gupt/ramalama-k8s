@@ -37,15 +37,17 @@ graph LR
 
 ### 🎭 **Multiple Model Support**
 
-| Model | Size | Status |
-|-------|------|--------|
-| **Qwen 3 1.7B**       | Small   | ✅ Ready |
-| **Gemma 3n E4B**      | Small   | ✅ Ready |
-| **Qwen 3 4B**         | Medium  | ✅ Ready |
-| **Qwen 3 30B**        | Large   | ✅ Ready |
-| **DeepSeek R1 Qwen3** | 8B      | ✅ Ready |
-| **GPT OSS 20B**       | Medium  |          |
-| **Custom**            | Any!    | ✅ Ready |
+| Model | Size | Type | Status |
+|-------|------|------|--------|
+| **Qwen 3 1.7B** | Small | Chat | ✅ Ready |
+| **Qwen 3 4B** | Medium | Chat | ✅ Ready |
+| **DeepSeek R1 Qwen3 8B** | Medium | Chat | ✅ Ready |
+| **Gemma 3n E4B** | Small | Chat | ✅ Ready |
+| **Gemma 3 12B** | Medium | Chat | ✅ Ready |
+| **GPT-OSS 20B** | Large | Chat | ✅ Ready |
+| **all-MiniLM-L6-v2** | Tiny | Embeddings | ✅ Ready |
+| **MS-MARCO MiniLM L12** | Small | Reranking | ✅ Ready |
+| **Custom** | Any! | Any | ✅ Ready |
 
 ### 🔐 **Security Features**
 
@@ -189,8 +191,8 @@ graph TB
         subgraph "🤖 ramalama namespace"
             M1[📦 qwen3-1b-deployment]
             M2[📦 qwen3-4b-deployment] 
-            M3[📦 qwen3-30b-deployment]
-            M4[📦 deepseek-r1-deployment]
+            M3[📦 deepseek-r1-deployment]
+            M4[📦 embeddings-deployment]
         end
         
         subgraph "🎯 openshift-lightspeed namespace"
@@ -213,7 +215,6 @@ graph TB
     
     LS -.->|🔗 Connects to| M2
     LS -.->|🔗 Connects to| M3
-    LS -.->|🔗 Connects to| M4
     
     CLI --> M1
     CLI --> M2
