@@ -115,7 +115,7 @@ class ModelGenerator:
         variables = {
             'MODEL_NAME_SAFE': model_name_safe,
             'MODEL_NAME': model_config.get('name', model_name_safe),
-            'MODEL_FILE': model_config.get('model_file', '/mnt/models/model.gguf'),
+            'MODEL_FILE': model_config.get('model_file', '/models/model.gguf'),
             'APP_IMAGE_URL': app_image_url,
             'CTX_SIZE': params.get('ctx_size', 4096),
             'THREADS': params.get('threads', 14),
@@ -192,7 +192,7 @@ configMapGenerator:
     behavior: replace
     literals:
       - MODEL_NAME={model_config.get('name', model_name_safe)}
-      - MODEL_FILE={model_config.get('model_file', '/mnt/models/model.gguf')}
+      - MODEL_FILE={model_config.get('model_file', '/models/model.gguf')}
       - ALIAS={model_name_safe}-model
 
 # Model-specific image

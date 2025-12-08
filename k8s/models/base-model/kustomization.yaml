@@ -20,7 +20,7 @@ configMapGenerator:
   - name: model-config
     literals:
       - MODEL_NAME=base-model
-      - MODEL_FILE=/mnt/models/model.file
+      - MODEL_FILE=/models/model.file
       - ALIAS=base-model
 
 # Apply deployment patches

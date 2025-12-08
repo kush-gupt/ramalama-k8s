@@ -191,73 +191,39 @@ k8s/openshift-ai/
     └── inferenceservice-rerank.yaml             # Reranking example
 ```
 
-## 🎛️ Template Parameters
+## 🎛️ Runtime Configuration
 
-### Generative Runtime (`ramalama-cpu`)
+The templates use sensible defaults. To customize, edit the YAML files directly or use kustomize patches.
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `IMAGE` | `quay.io/ramalama/ramalama:latest` | Container image to use |
-| `RUNTIME_VERSION` | `latest` | Version tag for the runtime |
-| `CTX_SIZE` | `4096` | Context window size |
-| `THREADS` | `-1` | CPU threads (-1 for auto) |
-| `TEMPERATURE` | `0.7` | Generation temperature |
-| `TOP_K` | `40` | Top-K sampling |
-| `TOP_P` | `0.9` | Top-P (nucleus) sampling |
-| `MIN_P` | `0` | Min-P sampling |
-| `CACHE_REUSE` | `256` | Token cache reuse |
-| `CPU_REQUEST` | `2` | CPU request |
-| `CPU_LIMIT` | `8` | CPU limit |
-| `MEMORY_REQUEST` | `4Gi` | Memory request |
-| `MEMORY_LIMIT` | `16Gi` | Memory limit |
+### Generative Runtime Defaults
 
-### Embeddings Runtime (`ramalama-embeddings`)
+| Setting | Value | Description |
+|---------|-------|-------------|
+| Image | `quay.io/ramalama/ramalama:latest` | Container image |
+| Context Size | `4096` | Context window size |
+| Threads | `-1` | CPU threads (auto) |
+| Temperature | `0.7` | Generation temperature |
+| CPU | `2-8` | Request-Limit |
+| Memory | `4Gi-16Gi` | Request-Limit |
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `IMAGE` | `quay.io/ramalama/ramalama:latest` | Container image to use |
-| `POOLING_TYPE` | `mean` | Pooling type: `mean`, `cls`, `last`, `none` |
-| `CTX_SIZE` | `512` | Context window size |
-| `THREADS` | `-1` | CPU threads (-1 for auto) |
-| `BATCH_SIZE` | `2048` | Logical batch size |
-| `UBATCH_SIZE` | `512` | Physical micro-batch size |
-| `CPU_REQUEST` | `1` | CPU request |
-| `CPU_LIMIT` | `4` | CPU limit |
-| `MEMORY_REQUEST` | `1Gi` | Memory request |
-| `MEMORY_LIMIT` | `4Gi` | Memory limit |
+### Embeddings Runtime Defaults
 
-### Reranking Runtime (`ramalama-rerank`)
+| Setting | Value | Description |
+|---------|-------|-------------|
+| Image | `quay.io/ramalama/ramalama:latest` | Container image |
+| Pooling | `mean` | Pooling type |
+| Context Size | `512` | Context window size |
+| CPU | `1-4` | Request-Limit |
+| Memory | `1Gi-4Gi` | Request-Limit |
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `IMAGE` | `quay.io/ramalama/ramalama:latest` | Container image to use |
-| `CTX_SIZE` | `512` | Context window size |
-| `THREADS` | `-1` | CPU threads (-1 for auto) |
-| `BATCH_SIZE` | `2048` | Logical batch size |
-| `UBATCH_SIZE` | `512` | Physical micro-batch size |
-| `CPU_REQUEST` | `1` | CPU request |
-| `CPU_LIMIT` | `4` | CPU limit |
-| `MEMORY_REQUEST` | `1Gi` | Memory request |
-| `MEMORY_LIMIT` | `4Gi` | Memory limit |
+### Reranking Runtime Defaults
 
-### Example with Custom Parameters
-
-```bash
-# Generative model with custom settings
-oc process ramalama-cpu -n redhat-ods-applications \
-  -p IMAGE=ghcr.io/kush-gupt/qwen3-4b-ramalama:latest \
-  -p CTX_SIZE=8192 \
-  -p THREADS=16 \
-  -p CPU_LIMIT=16 \
-  -p MEMORY_LIMIT=32Gi \
-  | oc apply -f - -n my-project
-
-# Embeddings with CLS pooling
-oc process ramalama-embeddings -n redhat-ods-applications \
-  -p POOLING_TYPE=cls \
-  -p BATCH_SIZE=4096 \
-  | oc apply -f - -n my-project
-```
+| Setting | Value | Description |
+|---------|-------|-------------|
+| Image | `quay.io/ramalama/ramalama:latest` | Container image |
+| Context Size | `512` | Context window size |
+| CPU | `1-4` | Request-Limit |
+| Memory | `1Gi-4Gi` | Request-Limit |
 
 ## 🗂️ Model Storage Options
 

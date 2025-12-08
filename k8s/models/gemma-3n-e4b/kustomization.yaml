@@ -20,7 +20,7 @@ configMapGenerator:
   behavior: replace
   literals:
   - MODEL_NAME=gemma-3n-e4b
-  - MODEL_FILE=/mnt/models/gemma-3n-E4B-it-UD-Q4_K_XL.gguf/gemma-3n-E4B-it-UD-Q4_K_XL.gguf
+  - MODEL_FILE=/models/gemma-3n-E4B-it-UD-Q4_K_XL.gguf/gemma-3n-E4B-it-UD-Q4_K_XL.gguf
   - ALIAS=gemma-3n-e4b-model
 - name: ramalama-config
   behavior: merge

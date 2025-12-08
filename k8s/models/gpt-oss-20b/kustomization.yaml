@@ -20,7 +20,7 @@ configMapGenerator:
   behavior: replace
   literals:
   - MODEL_NAME=gpt-oss-20b
-  - MODEL_FILE=/mnt/models/gpt-oss-20b-UD-Q4_K_XL.gguf/gpt-oss-20b-UD-Q4_K_XL.gguf
+  - MODEL_FILE=/models/gpt-oss-20b-UD-Q4_K_XL.gguf/gpt-oss-20b-UD-Q4_K_XL.gguf
   - ALIAS=gpt-oss-20b-model
 - name: ramalama-config
   behavior: merge

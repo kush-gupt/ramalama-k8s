@@ -32,11 +32,6 @@ spec:
     - -ngl=0
     command:
     - /usr/bin/llama-server
-    env:
-    - name: HF_HOME
-      value: /tmp/hf_home
-    - name: HF_HUB_OFFLINE
-      value: "1"
     image: quay.io/ramalama/ramalama:latest
     name: kserve-container
     ports:
@@ -67,7 +62,5 @@ spec:
   supportedModelFormats:
   - autoSelect: true
     name: gguf
-  - autoSelect: true
-    name: llama
   - autoSelect: true
     name: ramalama

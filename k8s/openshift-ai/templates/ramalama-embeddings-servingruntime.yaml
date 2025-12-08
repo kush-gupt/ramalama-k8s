@@ -26,7 +26,7 @@ objects:
     annotations:
       opendatahub.io/apiProtocol: REST
       opendatahub.io/recommended-accelerators: '[]'
-      opendatahub.io/runtime-version: ${RUNTIME_VERSION}
+      opendatahub.io/runtime-version: latest
       openshift.io/display-name: Ramalama CPU Embeddings ServingRuntime
     labels:
       opendatahub.io/dashboard: "true"
@@ -41,33 +41,26 @@ objects:
       - --model=/mnt/models
       - --alias={{.Name}}
       - --embedding
-      - --pooling=${POOLING_TYPE}
-      - --ctx-size=${CTX_SIZE}
-      - --threads=${THREADS}
-      - --batch-size=${BATCH_SIZE}
-      - --ubatch-size=${UBATCH_SIZE}
+      - --pooling=mean
+      - --batch-size=2048
+      - --ubatch-size=512
       - --no-warmup
       - --host=0.0.0.0
       - -ngl=0
       command:
       - /usr/bin/llama-server
-      env:
-      - name: HF_HOME
-        value: /tmp/hf_home
-      - name: HF_HUB_OFFLINE
-        value: "1"
-      image: ${IMAGE}
+      image: quay.io/ramalama/ramalama:latest
       name: kserve-container
       ports:
       - containerPort: 8080
         protocol: TCP
       resources:
         limits:
-          cpu: ${CPU_LIMIT}
-          memory: ${MEMORY_LIMIT}
+          cpu: "4"
+          memory: 4Gi
         requests:
-          cpu: ${CPU_REQUEST}
-          memory: ${MEMORY_REQUEST}
+          cpu: "1"
+          memory: 1Gi
       livenessProbe:
         httpGet:
           path: /health
@@ -88,60 +81,3 @@ objects:
       name: gguf
     - autoSelect: true
       name: embedding
-parameters:
-- description: Ramalama container image to use
-  displayName: Container Image
-  name: IMAGE
-  required: true
-  value: quay.io/ramalama/ramalama:latest
-- description: Runtime version
-  displayName: Runtime Version
-  name: RUNTIME_VERSION
-  required: true
-  value: latest
-- description: Pooling type for embeddings (mean, cls, last, none)
-  displayName: Pooling Type
-  name: POOLING_TYPE
-  required: false
-  value: mean
-- description: Context window size for the model
-  displayName: Context Size
-  name: CTX_SIZE
-  required: false
-  value: "512"
-- description: Number of CPU threads to use (-1 for auto)
-  displayName: CPU Threads
-  name: THREADS
-  required: false
-  value: "-1"
-- description: Logical batch size for embeddings
-  displayName: Batch Size
-  name: BATCH_SIZE
-  required: false
-  value: "2048"
-- description: Physical batch size for embeddings
-  displayName: Micro Batch Size
-  name: UBATCH_SIZE
-  required: false
-  value: "512"
-- description: CPU resource request
-  displayName: CPU Request
-  name: CPU_REQUEST
-  required: false
-  value: "1"
-- description: CPU resource limit
-  displayName: CPU Limit
-  name: CPU_LIMIT
-  required: false
-  value: "4"
-- description: Memory resource request
-  displayName: Memory Request
-  name: MEMORY_REQUEST
-  required: false
-  value: "1Gi"
-- description: Memory resource limit
-  displayName: Memory Limit
-  name: MEMORY_LIMIT
-  required: false
-  value: "4Gi"
-

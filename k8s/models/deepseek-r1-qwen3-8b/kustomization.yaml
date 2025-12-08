@@ -21,7 +21,7 @@ configMapGenerator:
     behavior: replace
     literals:
       - MODEL_NAME=DeepSeek R1 Qwen3 8B
-      - MODEL_FILE=/mnt/models/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf
+      - MODEL_FILE=/models/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf
       - ALIAS=deepseek-r1-qwen3-8b-model
   - name: ramalama-config
     behavior: merge

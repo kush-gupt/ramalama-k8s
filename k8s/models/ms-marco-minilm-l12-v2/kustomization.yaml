@@ -20,7 +20,7 @@ configMapGenerator:
   behavior: replace
   literals:
   - MODEL_NAME=ms-marco-minilm-l12-v2
-  - MODEL_FILE=/mnt/models/ms-marco-MiniLM-L12-v2.f16.gguf/ms-marco-MiniLM-L12-v2.f16.gguf
+  - MODEL_FILE=/models/ms-marco-MiniLM-L12-v2.f16.gguf/ms-marco-MiniLM-L12-v2.f16.gguf
   - ALIAS=ms-marco-minilm-l12-v2-model
 - name: ramalama-config
   behavior: merge

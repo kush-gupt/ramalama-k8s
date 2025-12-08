@@ -14,7 +14,7 @@ if [ -n "${MODEL_JINJA}" ]; then
 fi
 
 if [ -z "${MODEL_PATH}" ]; then
-    MODEL_PATH="/mnt/models/model.file"
+    MODEL_PATH="/models/model.file"
 fi
 if [ -n "${CTX_SIZE}" ]; then
     CTX_SIZE_FLAG="--ctx_size ${CTX_SIZE}"

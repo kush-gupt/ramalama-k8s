@@ -40,7 +40,7 @@ Options:
     -n, --name           Model name (e.g., llama-7b, mistral-7b)
     -d, --description    Model description
     -u, --model-gguf-url Model GGUF URL (e.g., hf://...)
-    -f, --model-file     Model file path inside container (e.g., /mnt/models/model.gguf/model.gguf)
+    -f, --model-file     Model file path inside container (e.g., /models/model.gguf/model.gguf)
     -s, --model-source   Model source image basename (optional, defaults to MODEL_NAME-source)
     -c, --config         Use config file (optional)
     --registry-path     Container registry path for images (default: ghcr.io/kush-gupt)
@@ -64,13 +64,13 @@ Examples:
     $0 --name llama-7b \\
        --description "Llama 7B model" \\
        --model-gguf-url "hf://ggml-org/llama-7b/llama-7b.gguf" \\
-       --model-file "/mnt/models/llama-7b.gguf/llama-7b.gguf"
+       --model-file "/models/llama-7b.gguf/llama-7b.gguf"
     
     # With Lightspeed overlay
     $0 --name llama-7b \\
        --description "Llama 7B model" \\
        --model-gguf-url "hf://ggml-org/llama-7b/llama-7b.gguf" \\
-       --model-file "/mnt/models/llama-7b.gguf/llama-7b.gguf" \\
+       --model-file "/models/llama-7b.gguf/llama-7b.gguf" \\
        --create-lightspeed-overlay
     
     # Using config file
@@ -296,11 +296,11 @@ ARG MODEL_SOURCE_NAME
 
 # Copy the entire /models directory from the model source
 # into the final application image.
-COPY --from=${MODEL_SOURCE_NAME} /models /mnt/models
+COPY --from=${MODEL_SOURCE_NAME} /models /models
 
 # This is a sanity check for OpenShift's random user ID.
 USER root
-RUN chmod -R a+rX /mnt/models
+RUN chmod -R a+rX /models
 USER 1001
 
 # Optional: Add labels to describe your new all-in-one image

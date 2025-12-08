@@ -25,7 +25,7 @@ objects:
     annotations:
       opendatahub.io/apiProtocol: REST
       opendatahub.io/recommended-accelerators: '[]'
-      opendatahub.io/runtime-version: ${RUNTIME_VERSION}
+      opendatahub.io/runtime-version: latest
       openshift.io/display-name: Ramalama CPU ServingRuntime
     labels:
       opendatahub.io/dashboard: "true"
@@ -39,13 +39,7 @@ objects:
       - --port=8080
       - --model=/mnt/models
       - --alias={{.Name}}
-      - --ctx-size=${CTX_SIZE}
-      - --threads=${THREADS}
-      - --temp=${TEMPERATURE}
-      - --top-k=${TOP_K}
-      - --top-p=${TOP_P}
-      - --min-p=${MIN_P}
-      - --cache-reuse=${CACHE_REUSE}
+      - --cache-reuse=256
       - --no-warmup
       - --jinja
       - --log-colors
@@ -53,23 +47,18 @@ objects:
       - -ngl=0
       command:
       - /usr/bin/llama-server
-      env:
-      - name: HF_HOME
-        value: /tmp/hf_home
-      - name: HF_HUB_OFFLINE
-        value: "1"
-      image: ${IMAGE}
+      image: quay.io/ramalama/ramalama:latest
       name: kserve-container
       ports:
       - containerPort: 8080
         protocol: TCP
       resources:
         limits:
-          cpu: ${CPU_LIMIT}
-          memory: ${MEMORY_LIMIT}
+          cpu: "8"
+          memory: 16Gi
         requests:
-          cpu: ${CPU_REQUEST}
-          memory: ${MEMORY_REQUEST}
+          cpu: "2"
+          memory: 4Gi
       livenessProbe:
         httpGet:
           path: /health
@@ -89,73 +78,4 @@ objects:
     - autoSelect: true
       name: gguf
     - autoSelect: true
-      name: llama
-    - autoSelect: true
       name: ramalama
-parameters:
-- description: Ramalama container image to use
-  displayName: Container Image
-  name: IMAGE
-  required: true
-  value: quay.io/ramalama/ramalama:latest
-- description: Runtime version
-  displayName: Runtime Version
-  name: RUNTIME_VERSION
-  required: true
-  value: latest
-- description: Context window size for the model
-  displayName: Context Size
-  name: CTX_SIZE
-  required: false
-  value: "4096"
-- description: Number of CPU threads to use (-1 for auto)
-  displayName: CPU Threads
-  name: THREADS
-  required: false
-  value: "-1"
-- description: Temperature for text generation (0.0-2.0)
-  displayName: Temperature
-  name: TEMPERATURE
-  required: false
-  value: "0.7"
-- description: Top-K sampling parameter
-  displayName: Top K
-  name: TOP_K
-  required: false
-  value: "40"
-- description: Top-P (nucleus) sampling parameter
-  displayName: Top P
-  name: TOP_P
-  required: false
-  value: "0.9"
-- description: Min-P sampling parameter
-  displayName: Min P
-  name: MIN_P
-  required: false
-  value: "0"
-- description: Number of tokens to reuse from cache
-  displayName: Cache Reuse
-  name: CACHE_REUSE
-  required: false
-  value: "256"
-- description: CPU resource request
-  displayName: CPU Request
-  name: CPU_REQUEST
-  required: false
-  value: "2"
-- description: CPU resource limit
-  displayName: CPU Limit
-  name: CPU_LIMIT
-  required: false
-  value: "8"
-- description: Memory resource request
-  displayName: Memory Request
-  name: MEMORY_REQUEST
-  required: false
-  value: "4Gi"
-- description: Memory resource limit
-  displayName: Memory Limit
-  name: MEMORY_LIMIT
-  required: false
-  value: "16Gi"
-

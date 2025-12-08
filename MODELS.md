@@ -27,7 +27,7 @@ The model management system consists of several components:
   --name "llama-7b" \
   --description "Llama 7B Chat model" \
   --model-source "quay.io/user/llama-7b:latest" \
-  --model-file "/mnt/models/llama-7b.gguf/llama-7b.gguf" \
+  --model-file "/models/llama-7b.gguf/llama-7b.gguf" \
   --ctx-size 4096 \
   --temp 0.7
 ```
@@ -86,7 +86,7 @@ models:
     name: "Human Readable Name"
     description: "Model description for labels"
     model_source: "registry/image:tag"
-    model_file: "/mnt/models/path/to/model.gguf"
+    model_file: "/models/path/to/model.gguf"
     maintainer: "Maintainer Name"
     template: "llama"  # Optional: use predefined template
     resource_size: "medium"  # small/medium/large for template resources
@@ -195,7 +195,7 @@ Adds a new model to the repository.
   --name "mistral-7b" \
   --description "Mistral 7B Instruct model" \
   --model-source "quay.io/user/mistral-7b:latest" \
-  --model-file "/mnt/models/mistral-7b.gguf/mistral-7b.gguf" \
+  --model-file "/models/mistral-7b.gguf/mistral-7b.gguf" \
   --ctx-size 8192 \
   --temp 0.6 \
   --maintainer "Your Name" \
@@ -340,7 +340,7 @@ oc get endpoints -n ramalama
 **3. Model file path incorrect**
 - Verify the path exists in the model source image
 - Check exact capitalization and path structure
-- Ensure using `/mnt/models/` prefix
+- Ensure using `/models/` prefix
 
 **4. Resource constraints**
 - Adjust memory/CPU requests based on model size

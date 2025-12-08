@@ -35,7 +35,7 @@ configMapGenerator:
     behavior: replace
     literals:
       - MODEL_NAME=production-model
-      - MODEL_FILE=/mnt/models/model.file
+      - MODEL_FILE=/models/model.file
       - ALIAS=production-model
 
 # Apply base security and health check patches first

@@ -100,7 +100,7 @@ oc get pods -l model=qwen3-1b -n ramalama
 ramalama serve hf://unsloth/Qwen3-1.7B-GGUF/Qwen3-1.7B-UD-Q4_K_XL.gguf
 
 # But for directly testing the images built here:
-podman run -p 8080:8080 ghcr.io/kush-gupt/qwen3-1b-ramalama /usr/bin/llama-server --port 8080 --model /mnt/models/Qwen3-1.7B-UD-Q4_K_XL.gguf/Qwen3-1.7B-UD-Q4_K_XL.gguf
+podman run -p 8080:8080 ghcr.io/kush-gupt/qwen3-1b-ramalama /usr/bin/llama-server --port 8080 --model /models/Qwen3-1.7B-UD-Q4_K_XL.gguf/Qwen3-1.7B-UD-Q4_K_XL.gguf
 ```
 
 ### 3️⃣ Test Your Model
@@ -245,7 +245,7 @@ graph TB
   --name "llama-7b" \
   --description "Llama 7B Chat model" \
   --model-gguf-url "hf://microsoft/Llama-7b-gguf" \
-  --model-file "/mnt/models/llama-7b.gguf/llama-7b.gguf" \
+  --model-file "/models/llama-7b.gguf/llama-7b.gguf" \
   --create-lightspeed-overlay
 ```
 
@@ -287,7 +287,7 @@ PORT=8080
 HOST=0.0.0.0
 
 # 🧠 Model Settings  
-MODEL_FILE=/mnt/models/model.gguf
+MODEL_FILE=/models/model.gguf
 CTX_SIZE=4096
 THREADS=14
 

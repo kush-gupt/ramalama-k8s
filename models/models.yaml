@@ -7,7 +7,7 @@ models:
     description: "All-in-one Ramalama server with embedded GPT-OSS 20B Q4_K_XL.gguf Unsloth model."
     model_source: "gpt-oss-20b-source"
     model_gguf_url: "hf://unsloth/gpt-oss-20b-GGUF/gpt-oss-20b-UD-Q4_K_XL.gguf"
-    model_file: "/mnt/models/gpt-oss-20b-UD-Q4_K_XL.gguf/gpt-oss-20b-UD-Q4_K_XL.gguf"
+    model_file: "/models/gpt-oss-20b-UD-Q4_K_XL.gguf/gpt-oss-20b-UD-Q4_K_XL.gguf"
     maintainer: "Kush Gupta"
     create_lightspeed_overlay: true
     lightspeed_namespace: "ramalama"
@@ -24,7 +24,7 @@ models:
     description: "All-in-one Ramalama server with embedded Qwen3-1.7B Q4_K_XL.gguf Unsloth model."
     model_source: "qwen3-1b-source"
     model_gguf_url: "hf://unsloth/Qwen3-1.7B-GGUF/Qwen3-1.7B-UD-Q4_K_XL.gguf"
-    model_file: "/mnt/models/Qwen3-1.7B-UD-Q4_K_XL.gguf/Qwen3-1.7B-UD-Q4_K_XL.gguf"
+    model_file: "/models/Qwen3-1.7B-UD-Q4_K_XL.gguf/Qwen3-1.7B-UD-Q4_K_XL.gguf"
     maintainer: "Kush Gupta"
     create_lightspeed_overlay: true
     lightspeed_namespace: "ramalama"
@@ -45,7 +45,7 @@ models:
     description: "All-in-one Ramalama server with embedded Qwen3-4B Q4_K_M.gguf Unsloth model."
     model_source: "qwen-4b-source"
     model_gguf_url: "hf://unsloth/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf"
-    model_file: "/mnt/models/Qwen3-4B-Q4_K_M.gguf/Qwen3-4B-Q4_K_M.gguf"
+    model_file: "/models/Qwen3-4B-Q4_K_M.gguf/Qwen3-4B-Q4_K_M.gguf"
     maintainer: "Kush Gupta"
     parameters:
       ctx_size: 20048
@@ -64,7 +64,7 @@ models:
     description: "All-in-one Ramalama server with embedded Qwen3-30B-A3B-UD-Q4_K_XL.gguf Unsloth model."
     model_source: "qwen-30b-source"
     model_gguf_url: "hf://unsloth/Qwen3-30B-A3B-GGUF/Qwen3-30B-A3B-UD-Q4_K_XL.gguf"
-    model_file: "/mnt/models/Qwen3-30B-A3B-UD-Q4_K_XL.gguf/Qwen3-30B-A3B-UD-Q4_K_XL.gguf"
+    model_file: "/models/Qwen3-30B-A3B-UD-Q4_K_XL.gguf/Qwen3-30B-A3B-UD-Q4_K_XL.gguf"
     maintainer: "Kush Gupta"
     parameters:
       ctx_size: 20048
@@ -83,7 +83,7 @@ models:
     description: "All-in-one Ramalama server with embedded Qwen3-30B-A3B-Instruct-2507-UD-Q3_K_XL.gguf Unsloth model."
     model_source: "qwen3-30b-a3b-instruct-2507-source"
     model_gguf_url: "hf://unsloth/Qwen3-30B-A3B-Instruct-2507-GGUF/Qwen3-30B-A3B-Instruct-2507-UD-Q3_K_XL.gguf"
-    model_file: "/mnt/models/Qwen3-30B-A3B-Instruct-2507-UD-Q3_K_XL.gguf/Qwen3-30B-A3B-Instruct-2507-UD-Q3_K_XL.gguf"
+    model_file: "/models/Qwen3-30B-A3B-Instruct-2507-UD-Q3_K_XL.gguf/Qwen3-30B-A3B-Instruct-2507-UD-Q3_K_XL.gguf"
     maintainer: "Kush Gupta"
     create_lightspeed_overlay: true
     lightspeed_namespace: "ramalama"
@@ -104,7 +104,7 @@ models:
     description: "All-in-one Ramalama server with embedded Unsloth DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf"
     model_source: "deepseek-r1-qwen3-8b-source"
     model_gguf_url: "hf://unsloth/DeepSeek-R1-0528-Qwen3-8B-GGUF/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf"
-    model_file: "/mnt/models/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf"
+    model_file: "/models/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf/DeepSeek-R1-0528-Qwen3-8B-UD-Q4_K_XL.gguf"
     maintainer: "Kush Gupta"
     parameters:
       ctx_size: 20048
@@ -123,7 +123,7 @@ models:
     description: "All-in-one Ramalama server with embedded Gemma 3N E4B Q4_K_XL.gguf Unsloth model."
     model_source: "gemma-3n-e4b-source"
     model_gguf_url: "hf://unsloth/gemma-3n-E4B-it-GGUF/gemma-3n-E4B-it-UD-Q4_K_XL.gguf"
-    model_file: "/mnt/models/gemma-3n-E4B-it-UD-Q4_K_XL.gguf/gemma-3n-E4B-it-UD-Q4_K_XL.gguf"
+    model_file: "/models/gemma-3n-E4B-it-UD-Q4_K_XL.gguf/gemma-3n-E4B-it-UD-Q4_K_XL.gguf"
     maintainer: "Kush Gupta"
     create_lightspeed_overlay: true
     lightspeed_namespace: "ramalama"
@@ -144,7 +144,7 @@ models:
     description: "gemma-3-12b-it-Q4_K_M.gguf from Unsloth"
     model_source: "gemma-3-12b-source"
     model_gguf_url: "hf://unsloth/gemma-3-12b-it-GGUF/gemma-3-12b-it-Q4_K_M.gguf"
-    model_file: "/mnt/models/gemma-3-12b-it-Q4_K_M.gguf/gemma-3-12b-it-Q4_K_M.gguf"
+    model_file: "/models/gemma-3-12b-it-Q4_K_M.gguf/gemma-3-12b-it-Q4_K_M.gguf"
     maintainer: "Kush Gupta"
     create_lightspeed_overlay: true
     lightspeed_namespace: "ramalama"
@@ -160,7 +160,7 @@ models:
     description: "all-MiniLM-L6-v2-Q5_K_M.gguf from second-state"
     model_source: "all-minilm-l6-v2-source"
     model_gguf_url: "hf://second-state/All-MiniLM-L6-v2-Embedding-GGUF/all-MiniLM-L6-v2-Q5_K_M.gguf"
-    model_file: "/mnt/models/all-MiniLM-L6-v2-Q5_K_M.gguf/all-MiniLM-L6-v2-Q5_K_M.gguf"
+    model_file: "/models/all-MiniLM-L6-v2-Q5_K_M.gguf/all-MiniLM-L6-v2-Q5_K_M.gguf"
     maintainer: "Kush Gupta"
     create_lightspeed_overlay: true
     lightspeed_namespace: "ramalama"
@@ -176,7 +176,7 @@ models:
     description: "MS MARCO MiniLM L12 v2 reranker model for document relevance scoring"
     model_source: "ms-marco-minilm-l12-v2-source"
     model_gguf_url: "hf://mradermacher/ms-marco-MiniLM-L12-v2-GGUF/ms-marco-MiniLM-L12-v2.f16.gguf"
-    model_file: "/mnt/models/ms-marco-MiniLM-L12-v2.f16.gguf/ms-marco-MiniLM-L12-v2.f16.gguf"
+    model_file: "/models/ms-marco-MiniLM-L12-v2.f16.gguf/ms-marco-MiniLM-L12-v2.f16.gguf"
     maintainer: "Kush Gupta"
     create_lightspeed_overlay: true
     lightspeed_namespace: "ramalama"
